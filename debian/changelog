@@ -1,0 +1,59 @@
+makedumpfile (1.2.9-0ubuntu3) intrepid; urgency=low
+
+  * Add missing build dependency "zip" to fix FTBFS.
+
+ -- Martin Pitt <martin.pitt@ubuntu.com>  Wed, 08 Oct 2008 15:11:25 +0200
+
+makedumpfile (1.2.9-0ubuntu2) intrepid; urgency=low
+
+  * Corrected FTBFS caused by a mistake in the makefile
+
+ -- Michael Casadevall <sonicmctails@gmail.com>  Mon, 06 Oct 2008 02:01:26 -0400
+
+makedumpfile (1.2.9-0ubuntu1) intrepid; urgency=low
+
+  * New upstream version (LP: #271956)
+  * Support ia64 discontigmem kernels of linux-2.6.20+.
+  * Support x86_64 linux-2.6.27 kernel.
+  * Add "--vtop" option for debugging.
+  * Add the debugging message for ia64 pgtable.
+  * Get information from vmcoreinfo of /proc/vmcore even if -x/-i option.
+  * Add free() for error handling.
+  * Fix NOT_FOUND value of SIZE(nodemask_t).
+  * Use the terminal sizes of 80 for the IMPLEMENTATION file. (Bernhard Walle)
+  * Use static allocation instead of malloc().
+  * Add get_num_dumpable() function.
+  * Remove the unused pointer.
+  * Remove the unused code.
+  * Make the ELF methods simple.
+  * Merge the same code in write_elf_pages().
+  * Add "void" to some arguments.
+  * Separate the dependency code to machine and linux version.
+  * Cleanup vaddr_to_paddr() function.
+
+ -- Kevin Worth <kworth@gmail.com>  Thu, 18 Sep 2008 10:34:45 -0700
+
+makedumpfile (1.2.6-0ubuntu3) intrepid; urgency=low
+
+  * Added lpia to architectures.
+
+ -- Ben Collins <ben.collins@canonical.com>  Tue, 08 Jul 2008 10:51:37 -0400
+
+makedumpfile (1.2.6-0ubuntu2) intrepid; urgency=low
+
+  * Get rid of prerm and postinst from packaging, they were empty.
+  * Added copyright for packaging.
+  * Added copyright for ppc64.c to debian/copyright
+  * Check return value of read(), gets rid of warnings.
+
+ -- Ben Collins <ben.collins@canonical.com>  Wed, 02 Jul 2008 09:18:36 -0400
+
+makedumpfile (1.2.6-0ubuntu1) intrepid; urgency=low
+
+  * Initial release
+  * Use _LARGEFILE_SOURCE and _LARGEFILE64_SOURCE instead of
+    _FILE_OFFSET_BITS=64 for correct compilation.
+  * Added initramfs hook to install makedumpfile into initrd
+
+ -- Ben Collins <ben.collins@canonical.com>  Wed, 18 Jun 2008 18:15:32 -0400
+

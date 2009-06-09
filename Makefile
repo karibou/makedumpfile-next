@@ -4,9 +4,9 @@ VERSION=1.2.9
 DATE=5 September 2008
 
 CC	= gcc
-CFLAGS = -g -O2 -Wall -D_FILE_OFFSET_BITS=64 \
+CFLAGS = -g -O2 -Wall -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE \
 	  -DVERSION='"$(VERSION)"' -DRELEASE_DATE='"$(DATE)"'
-CFLAGS_ARCH	= -g -O2 -Wall -D_FILE_OFFSET_BITS=64
+CFLAGS_ARCH	= -g -O2 -Wall -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE
 
 ARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/sun4u/sparc64/ \
 			       -e s/arm.*/arm/ -e s/sa110/arm/ \
@@ -31,13 +31,13 @@ $(OBJ_ARCH): $(SRC_ARCH)
 
 makedumpfile: $(SRC) $(OBJ_ARCH)
 	$(CC) $(CFLAGS) $(OBJ_ARCH) -o $@ $< -static -ldw -lelf -lz
-	zip ./makedumpfile.8.gz ./makedumpfile.8
+	gzip -c makedumpfile.8 > makedumpfile.8.gz
 
 clean:
 	rm -f $(OBJ) $(OBJ_ARCH) makedumpfile makedumpfile.8.gz
 
 install:
-	cp makedumpfile ${DESTDIR}/bin
-	cp makedumpfile-R.pl ${DESTDIR}/bin
-	cp makedumpfile.8.gz ${DESTDIR}/usr/share/man/man8
+	install -D -m755 ./makedumpfile ${DESTDIR}/usr/bin/makedumpfile
+	install -D -m755 ./makedumpfile-R.pl ${DESTDIR}/usr/bin/makedumpfile-R.pl
+	install -D -m755 ./makedumpfile.8.gz ${DESTDIR}/usr/share/man/man8/makedumpfile.8.gz
 

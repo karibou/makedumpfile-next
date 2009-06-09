@@ -1,0 +1,17 @@
+Source: makedumpfile
+Section: devel
+Priority: optional
+Maintainer: Ubuntu Core Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Ben Collins <ben.collins@canonical.com>
+Standards-Version: 3.2.0.0
+Build-Depends: debhelper, libelf-dev, libz-dev, libdw-dev, zip
+
+Package: makedumpfile
+Architecture: i386 amd64 powerpc ia64 lpia
+Depends: ${shlibs:Depends}
+Recommends: crash, kexec-tools
+Description: VMcore extraction tool
+ This program is used to extract a subset of the memory available either
+ via /dev/mem or /proc/vmcore (for crashdumps). It is used to get memory
+ images without extra uneeded information (zero pages, userspace programs,
+ etc).
