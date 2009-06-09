@@ -1,4 +1,4 @@
-.TH MAKEDUMPFILE 8 "September 2008" "makedumpfile v1.2.9" "Linux System Administrator's Manual"
+.TH MAKEDUMPFILE 8 "April 2009" "makedumpfile v1.3.3" "Linux System Administrator's Manual"
 .SH NAME
 makedumpfile \- make a small dumpfile of kdump
 .SH SYNOPSIS
@@ -8,9 +8,15 @@ makedumpfile \- make a small dumpfile of kdump
 .br
 \fBmakedumpfile\fR \-R \fIDUMPFILE\fR
 .br
+\fBmakedumpfile\fR \-\-split [\fIOPTION\fR] [\-x \fIVMLINUX\fR|\-i \fIVMCOREINFO\fR] \fIVMCORE\fR \fIDUMPFILE1\fR \fIDUMPFILE2\fR [\fIDUMPFILE3\fR ..]
+.br
+\fBmakedumpfile\fR \-\-reassemble \fIDUMPFILE1\fR \fIDUMPFILE2\fR [\fIDUMPFILE3\fR ..] \fIDUMPFILE\fR
+.br
 \fBmakedumpfile\fR \-g \fIVMCOREINFO\fR \-x \fIVMLINUX\fR
 .br
 \fBmakedumpfile\fR \-E [\-\-xen-syms \fIXEN-SYMS\fR|\-\-xen-vmcoreinfo \fIVMCOREINFO\fR] \fIVMCORE\fR \fIDUMPFILE\fR
+.br
+\fBmakedumpfile\fR \-\-dump-dmesg [\-x \fIVMLINUX\fR|\-i \fIVMCOREINFO\fR] \fIVMCORE\fR \fILOGFILE\fR
 .br
 .B makedumpfile
 \-h
@@ -90,12 +96,18 @@ Specify the type of unnecessary page for analysis.
 Pages of the specified type are not copied to \fIDUMPFILE\fR. The page type
 marked in the following table is excluded. A user can specify multiple page
 types by setting the sum of each page type for dump_level. The maximum of
-dump_level is 31.
-Note that dump_level for Xen dump filtering is 0 or 1.
+dump_level is 31. Note that dump_level for Xen dump filtering is 0 or 1.
+.br
+If specifying multiple dump_levels with the delimiter ',', makedumpfile retries
+to create a \fIDUMPFILE\fR by other dump_level when "No space on device" error
+happens. For example, if dump_level is "11,31" and makedumpfile fails
+by dump_level 11, makedumpfile retries it by dump_level 31.
 .br
 .B Example:
 .br
 # makedumpfile \-d 11 \-x vmlinux /proc/vmcore dumpfile
+.br
+# makedumpfile \-d 11,31 \-x vmlinux /proc/vmcore dumpfile
 
   dump | zero | cache|cache  | user | free
  level | page | page |private| data | page
@@ -253,6 +265,29 @@ host by running this script.
 | ssh user@host "makedumpfile\-R.pl dumpfile"
 
 .TP
+\fB\-\-split\fR
+Split the dump data to multiple \fIDUMPFILE\fRs in parallel. If specifying
+\fIDUMPFILE\fRs on different storage devices, a device can share I/O load
+with other devices and it reduces time for saving the dump data. The file
+size of each \fIDUMPFILE\fR is smaller than the system memory size which
+is divided by the number of \fIDUMPFILE\fRs. This feature supports only
+the kdump\-compressed format.
+.br
+.B Example:
+.br
+# makedumpfile \-\-split \-d 31 \-x vmlinux /proc/vmcore dumpfile1 dumpfile2
+
+.TP
+\fB\-\-reassemble\fR
+Reassemble multiple \fIDUMPFILE\fRs, which are created by \-\-split option,
+into one \fIDUMPFILE\fR. dumpfile1 and dumpfile2 are reassembled into dumpfile
+on the following example.
+.br
+.B Example:
+.br
+# makedumpfile \-\-reassemble dumpfile1 dumpfile2 dumpfile
+
+.TP
 \fB\-\-xen-syms\fR \fIXEN-SYMS\fR
 Specify the \fIXEN-SYMS\fR with debug information to analyze the xen's memory usage.
 This option extracts the part of xen and domain-0.
@@ -363,6 +398,22 @@ output of this option with the one of "vtop" subcommand of the
 crash utility.
 "--vtop" option only prints the translation output, and it does
 not affect the dumpfile creation.
+
+.TP
+\fB\-\-dump-dmesg\fR
+This option overrides the normal behavior of makedumpfile.  Instead of
+compressing and filtering a \fIVMCORE\fR to make it smaller, it simply
+extracts the dmesg log from a \fIVMCORE\fR and writes it to the specified
+\fILOGFILE\fR. If a \fIVMCORE\fR does not contain \fIVMCOREINFO\fR for dmesg,
+it is necessary to specfiy [\-x \fIVMLINUX\fR] or [\-i \fIVMCOREINFO\fR].
+
+.br
+.B Example:
+.br
+# makedumpfile \-\-dump-dmesg /proc/vmcore dmesgfile
+.br
+# makedumpfile \-\-dump-dmesg -x vmlinux /proc/vmcore dmesgfile
+.br
 
 .TP
 \fB\-D\fR
