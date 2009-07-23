@@ -1,10 +1,13 @@
 #!/usr/bin/make -f
 
-build:
+include /usr/share/dpatch/dpatch.make
+
+build: patch
 	dh_testdir
 	$(MAKE)
 
-clean:
+clean: clean1 unpatch
+clean1:
 	dh_testdir
 	dh_testroot
 	-$(MAKE) clean

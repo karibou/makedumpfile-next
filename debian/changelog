@@ -1,3 +1,34 @@
+makedumpfile (1.3.3-0ubuntu4) karmic; urgency=low
+
+  * debian/patches/02-Add_x86_64_linux-2.6.31.patch:
+    - apply patch by Ken'ichi Ohmichi to support 2.6.31 on
+      amd64 (kernel memory layout changed)
+
+ -- Michael Vogt <michael.vogt@ubuntu.com>  Thu, 16 Jul 2009 09:18:33 +0200
+
+makedumpfile (1.3.3-0ubuntu3) karmic; urgency=low
+
+  * debian/rules, debian/control:
+    - add dpatch
+  * debian/patches/01_fix_makefile:
+    - fix make install target
+
+ -- Michael Vogt <michael.vogt@ubuntu.com>  Tue, 23 Jun 2009 13:14:10 +0200
+
+makedumpfile (1.3.3-0ubuntu2) karmic; urgency=low
+
+  * fix FTBFS due to missing man dir
+
+ -- Michael Vogt <michael.vogt@ubuntu.com>  Tue, 23 Jun 2009 09:21:08 +0200
+
+makedumpfile (1.3.3-0ubuntu1) karmic; urgency=low
+
+  * New upstream release
+  * depends on latest libdw-dev (the previous version does
+    not ship the required static lib)
+
+ -- Michael Vogt <michael.vogt@ubuntu.com>  Mon, 22 Jun 2009 16:19:42 +0200
+
 makedumpfile (1.2.9-0ubuntu3) intrepid; urgency=low
 
   * Add missing build dependency "zip" to fix FTBFS.

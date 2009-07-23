@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Ubuntu Core Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 XSBC-Original-Maintainer: Ben Collins <ben.collins@canonical.com>
 Standards-Version: 3.2.0.0
-Build-Depends: debhelper, libelf-dev, libz-dev, libdw-dev, zip
+Build-Depends: debhelper, libelf-dev, libz-dev, libdw-dev (>= 0.141-2ubuntu1), zip, dpatch
 
 Package: makedumpfile
 Architecture: i386 amd64 powerpc ia64 lpia

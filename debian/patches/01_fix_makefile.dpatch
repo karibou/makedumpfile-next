@@ -1,0 +1,21 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 01_fix_makefile.dpatch by  <egon@top>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad makedumpfile-1.3.3~/Makefile makedumpfile-1.3.3/Makefile
+--- makedumpfile-1.3.3~/Makefile	2009-04-20 08:26:23.000000000 +0200
++++ makedumpfile-1.3.3/Makefile	2009-06-23 13:23:37.538753532 +0200
+@@ -39,7 +39,7 @@
+ 	rm -f $(OBJ) $(OBJ_ARCH) makedumpfile makedumpfile.8.gz
+ 
+ install:
+-	cp makedumpfile ${DESTDIR}/bin
+-	cp makedumpfile-R.pl ${DESTDIR}/bin
+-	cp makedumpfile.8.gz ${DESTDIR}/usr/share/man/man8
++	install -D -m755 ./makedumpfile ${DESTDIR}/usr/bin/makedumpfile
++	install -D -m755 ./makedumpfile-R.pl ${DESTDIR}/usr/bin/makedumpfile-R.pl
++	install -D -m755 ./makedumpfile.8.gz ${DESTDIR}/usr/share/man/man8/makedumpfile.8.gz
+ 

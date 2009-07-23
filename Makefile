@@ -39,7 +39,7 @@ clean:
 	rm -f $(OBJ) $(OBJ_ARCH) makedumpfile makedumpfile.8.gz
 
 install:
-	install -D -m755 ./makedumpfile ${DESTDIR}/usr/bin/makedumpfile
-	install -D -m755 ./makedumpfile-R.pl ${DESTDIR}/usr/bin/makedumpfile-R.pl
-	install -D -m755 ./makedumpfile.8.gz ${DESTDIR}/usr/share/man/man8/makedumpfile.8.gz
+	cp makedumpfile ${DESTDIR}/bin
+	cp makedumpfile-R.pl ${DESTDIR}/bin
+	cp makedumpfile.8.gz ${DESTDIR}/usr/share/man/man8
 
