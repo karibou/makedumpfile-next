@@ -13,7 +13,7 @@ clean: clean1 unpatch
 clean1:
 	dh_testdir
 	dh_testroot
-	-$(MAKE) clean
+	$(MAKE) clean
 	dh_clean
 
 install:
