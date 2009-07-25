@@ -1,3 +1,9 @@
+makedumpfile (1.3.3-1) UNRELEASED; urgency=low
+
+  * Upload to Debian. Changes from Ubuntu:
+
+ -- John Wright <jsw@debian.org>  Sat, 25 Jul 2009 13:54:15 +0200
+
 makedumpfile (1.3.3-0ubuntu4) karmic; urgency=low
 
   * debian/patches/02-Add_x86_64_linux-2.6.31.patch:
