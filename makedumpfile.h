@@ -1,7 +1,7 @@
 /*
  * makedumpfile.h
  *
- * Copyright (C) 2006, 2007  NEC Corporation
+ * Copyright (C) 2006, 2007, 2008, 2009  NEC Corporation
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/utsname.h>
+#include <sys/wait.h>
 #include <zlib.h>
 #include <elfutils/libdw.h>
 #include <libelf.h>
@@ -55,7 +56,8 @@ enum {
 /*
  * Page flags
  *
- * TODO: _ORIGINAL should be changed to _2_6_XX.
+ * The flag values of page.flags have been defined by enum since linux-2.6.26.
+ * The following values are for linux-2.6.25 or former.
  */
 #define PG_lru_ORIGINAL	 	(5)
 #define PG_private_ORIGINAL	(11)	/* Has something at ->private */
@@ -79,9 +81,10 @@ enum {
  * Type of address
  */
 enum {
-	PADDR,
 	VADDR,
-	VADDR_XEN
+	PADDR,
+	VADDR_XEN,
+	MADDR_XEN
 };
 
 
@@ -141,6 +144,8 @@ isAnon(unsigned long mapping)
  */
 #define MIN_DUMP_LEVEL		(0)
 #define MAX_DUMP_LEVEL		(31)
+#define NUM_ARRAY_DUMP_LEVEL	(MAX_DUMP_LEVEL + 1) /* enough to allocate
+							all the dump_level */
 #define DL_EXCLUDE_ZERO		(0x001) /* Exclude Pages filled with Zeros */
 #define DL_EXCLUDE_CACHE	(0x002) /* Exclude Cache Pages
 				           without Private Pages */
@@ -421,6 +426,14 @@ do { \
 } while (0)
 
 /*
+ * Macro for getting splitting info.
+ */
+#define SPLITTING_DUMPFILE(i)	info->splitting_info[i].name_dumpfile
+#define SPLITTING_FD_BITMAP(i)	info->splitting_info[i].fd_bitmap
+#define SPLITTING_START_PFN(i)	info->splitting_info[i].start_pfn
+#define SPLITTING_END_PFN(i)	info->splitting_info[i].end_pfn
+
+/*
  * kernel version
  *
  * NOTE: the format of kernel_version is as follows
@@ -434,7 +447,7 @@ do { \
 #define KVER_MIN_SHIFT 16
 #define KERNEL_VERSION(x,y,z) (((x) << KVER_MAJ_SHIFT) | ((y) << KVER_MIN_SHIFT) | (z))
 #define OLDEST_VERSION		(0x0206000f)	/* linux-2.6.15 */
-#define LATEST_VERSION		(0x0206001a)	/* linux-2.6.26 */
+#define LATEST_VERSION		(0x0206001d)	/* linux-2.6.29 */
 #define VERSION_LINUX_2_6_26	(0x0206001a)	/* linux-2.6.26 */
 #define VERSION_LINUX_2_6_27	(0x0206001b)	/* linux-2.6.27 */
 
@@ -453,6 +466,7 @@ do { \
  */
 #define STR_OSRELEASE		"OSRELEASE="
 #define STR_PAGESIZE		"PAGESIZE="
+#define STR_CRASHTIME		"CRASHTIME="
 #define STR_SYMBOL(X)		"SYMBOL("X")="
 #define STR_SIZE(X)		"SIZE("X")="
 #define STR_OFFSET(X)		"OFFSET("X")="
@@ -468,6 +482,7 @@ do { \
  */
 #define TRUE		(1)
 #define FALSE		(0)
+#define NOSPACE		(-1)    /* code of write-error due to nospace */
 #define MAX(a,b)	((a) > (b) ? (a) : (b))
 #define MIN(a,b)	((a) < (b) ? (a) : (b))
 #define LONG_MAX	((long)(~0UL>>1))
@@ -495,9 +510,28 @@ do { \
 #define KVBASE_MASK		(0x7fffff)
 #define KVBASE			(SYMBOL(_stext) & ~KVBASE_MASK)
 #define _SECTION_SIZE_BITS	(26)
-#define _SECTION_SIZE_BITS_PAE	(30)
+#define _SECTION_SIZE_BITS_PAE_ORIG	(30)
+#define _SECTION_SIZE_BITS_PAE_2_6_26	(29)
 #define _MAX_PHYSMEM_BITS	(32)
 #define _MAX_PHYSMEM_BITS_PAE	(36)
+
+#define PGDIR_SHIFT_3LEVEL	(30)
+#define PTRS_PER_PTE_3LEVEL	(512)
+#define PTRS_PER_PGD_3LEVEL	(4)
+#define PMD_SHIFT		(21)  /* only used by PAE translators */
+#define PTRS_PER_PMD		(512) /* only used by PAE translators */
+#define PTE_SHIFT		(12)  /* only used by PAE translators */
+#define PTRS_PER_PTE		(512) /* only used by PAE translators */
+
+#define pgd_index_PAE(address)  (((address) >> PGDIR_SHIFT_3LEVEL) & (PTRS_PER_PGD_3LEVEL - 1))
+#define pmd_index(address)  (((address) >> PMD_SHIFT) & (PTRS_PER_PMD - 1))
+#define pte_index(address)  (((address) >> PTE_SHIFT) & (PTRS_PER_PTE - 1))
+
+#define _PAGE_PRESENT		(0x001)
+#define _PAGE_PSE		(0x080)
+
+#define ENTRY_MASK		(~0x8000000000000fffULL)
+
 #endif /* x86 */
 
 #ifdef __x86_64__
@@ -611,10 +645,12 @@ do { \
  */
 #ifdef __x86__
 int get_machdep_info_x86(void);
+int get_versiondep_info_x86(void);
+unsigned long long vaddr_to_paddr_x86(unsigned long vaddr);
 #define get_phys_base()		TRUE
 #define get_machdep_info()	get_machdep_info_x86()
-#define get_versiondep_info()	TRUE
-#define vaddr_to_paddr(X)	vaddr_to_paddr_general(X)
+#define get_versiondep_info()	get_versiondep_info_x86()
+#define vaddr_to_paddr(X)	vaddr_to_paddr_x86(X)
 #endif /* x86 */
 
 #ifdef __x86_64__
@@ -648,7 +684,7 @@ unsigned long long vaddr_to_paddr_ia64(unsigned long vaddr);
 #endif          /* ia64 */
 
 struct pt_load_segment {
-	loff_t			file_offset;
+	off_t			file_offset;
 	unsigned long long	phys_start;
 	unsigned long long	phys_end;
 	unsigned long long	virt_start;
@@ -704,13 +740,24 @@ struct makedumpfile_data_header {
 	int64_t	buf_size;
 };
 
+struct splitting_info {
+	char			*name_dumpfile;
+	int 			fd_bitmap;
+	unsigned long long	start_pfn;
+	unsigned long long	end_pfn;
+} splitting_info_t;
+
 struct DumpInfo {
 	int32_t		kernel_version;      /* version of first kernel*/
+	struct timeval	timestamp;
 
 	/*
 	 * General info:
 	 */
-	int		dump_level;          /* dump level */
+	int		dump_level;          /* current dump level */
+	int		max_dump_level;      /* maximum dump level */
+	int		num_dump_level;      /* number of dump level */
+	int		array_dump_level[NUM_ARRAY_DUMP_LEVEL];
 	int		flag_compress;       /* flag of compression */
 	int		flag_elf64_memory;   /* flag of ELF64 memory */
 	int		flag_elf_dumpfile;   /* flag of creating ELF dumpfile */
@@ -722,8 +769,12 @@ struct DumpInfo {
 						format to a standard out */
 	int		flag_rearrange;      /* flag of creating dumpfile from
 						flattened format */
+	int		flag_split;	     /* splitting vmcore */
+	int		flag_reassemble;     /* reassemble multiple dumpfiles into one */
 	int		flag_force;	     /* overwrite existing stuff */
 	int		flag_exclude_xen_dom;/* exclude Domain-U from xen-kdump */
+	int             flag_dmesg;          /* dump the dmesg log out of the vmcore file */
+	int		flag_nospace;	     /* the flag of "No space on device" error */
 	unsigned long	vaddr_for_vtop;      /* virtual address for debugging */
 	long		page_size;           /* size of page */
 	long		page_shift;
@@ -778,6 +829,8 @@ struct DumpInfo {
 	 */
 	int			fd_dumpfile;
 	char			*name_dumpfile;
+	int			num_dumpfile;
+	struct splitting_info	*splitting_info;
 
 	/*
 	 * bitmap info:
@@ -815,6 +868,11 @@ struct DumpInfo {
 	int	num_domain;
 	struct domain_list *domain_list;
 
+	/*
+	 * for splitting
+	 */
+	unsigned long long split_start_pfn;  
+	unsigned long long split_end_pfn;  
 };
 extern struct DumpInfo		*info;
 
@@ -840,6 +898,7 @@ struct symbol_table {
 	unsigned long long 	_stext;
 	unsigned long long 	swapper_pg_dir;
 	unsigned long long 	init_level4_pgt;
+	unsigned long long 	vmlist;
 	unsigned long long 	phys_base;
 	unsigned long long 	node_online_map;
 	unsigned long long 	node_states;
@@ -847,6 +906,9 @@ struct symbol_table {
 	unsigned long long 	node_data;
 	unsigned long long 	pgdat_list;
 	unsigned long long 	contig_page_data;
+	unsigned long long   	log_buf;
+	unsigned long long   	log_buf_len;
+	unsigned long long   	log_end;
 
 	/*
 	 * for Xen extraction
@@ -919,6 +981,9 @@ struct offset_table {
 		long	size;
 		long	nid;
 	} node_memblk_s;
+	struct vm_struct {
+		long	addr;
+	} vm_struct;
 
 	/*
 	 * for Xen extraction
@@ -1025,7 +1090,11 @@ int get_elf64_phdr(int fd, char *filename, int num, Elf64_Phdr *phdr);
 int get_elf32_phdr(int fd, char *filename, int num, Elf32_Phdr *phdr);
 int get_str_osrelease_from_vmlinux(void);
 int get_pt_note_info(off_t off_note, unsigned long sz_note);
+int read_vmcoreinfo_xen(void);
 int exclude_xen_user_domain(void);
+unsigned long long get_num_dumpable(void);
+void close_vmcoreinfo(void);
+int close_files_for_creating_dumpfile(void);
 
 
 /*
@@ -1050,19 +1119,6 @@ struct domain_list {
 	((x) >= HYPERVISOR_VIRT_START_PAE && (x) < HYPERVISOR_VIRT_END)
 #define is_direct(x) \
 	((x) >= DIRECTMAP_VIRT_START && (x) < DIRECTMAP_VIRT_END)
-
-#define PGDIR_SHIFT_3LEVEL   (30)
-#define PTRS_PER_PTE_3LEVEL  (512)
-#define PTRS_PER_PGD_3LEVEL  (4)
-#define PMD_SHIFT            (21)    /* only used by PAE translators */
-#define PTRS_PER_PMD         (512)   /* only used by PAE translators */
-#define PTE_SHIFT            (12)    /* only used by PAE translators */
-#define PTRS_PER_PTE         (512)   /* only used by PAE translators */
-
-#define _PAGE_PRESENT   0x001
-#define _PAGE_PSE       0x080
-
-#define ENTRY_MASK	(~0x8000000000000fffULL)
 
 unsigned long long kvtop_xen_x86(unsigned long kvaddr);
 #define kvtop_xen(X)	kvtop_xen_x86(X)
