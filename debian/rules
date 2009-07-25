@@ -19,7 +19,7 @@ clean1:
 install:
 	dh_testdir
 	dh_testroot
-	dh_clean -k
+	dh_prep
 	dh_installdirs
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/makedumpfile
 	install -D -m755 debian/initramfs-hook \
