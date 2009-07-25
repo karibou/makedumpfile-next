@@ -2,6 +2,9 @@
 
 include /usr/share/quilt/quilt.make
 
+# Figure out the git branch we're on
+branch = $(shell git symbolic-ref HEAD 2>/dev/null | sed s:refs/heads/::)
+
 build: patch
 	dh_testdir
 	$(MAKE)
@@ -39,5 +42,28 @@ binary-arch: build install
 	dh_md5sums
 	dh_builddeb
 
+guilt-patches: unpatch
+	dh_testdir
+	test -d .git
+	test -n '$(branch)'
+
+	# Make sure no guilt patches are applied.  But don't fail if guilt
+	# hasn't been initialized yet.
+	guilt status > /dev/null || guilt init
+	guilt pop -a
+
+	rm -rf .git/patches/$(branch)
+	rsync -av --delete debian/patches/ .git/patches/$(branch)
+	touch .git/patches/$(branch)/status
+
+debian/patches: unpatch
+	dh_testdir
+	test -d .git
+
+	guilt pop -a
+	rm -rf debian/patches
+	guilt export debian/patches
+
 binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary
+.PHONY: build clean binary-indep binary-arch binary \
+	guilt-patches debian/patches
