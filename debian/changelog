@@ -10,6 +10,8 @@ makedumpfile (1.3.3-1) UNRELEASED; urgency=low
     - Update Standards-Version to 3.8.2, adding a README.source
       explaining the quilt patch setup
     - Add ${perl:Depends} to Depends, since we ship a perl script
+    - Add lintian overrides relating to makedumpfile being statically
+      linked
 
  -- John Wright <jsw@debian.org>  Sun, 26 Jul 2009 12:08:30 +0200
 

@@ -1,0 +1,3 @@
+# We need to statically link makedumpfile for easy inclusion in an initramfs
+makedumpfile: embedded-zlib ./usr/bin/makedumpfile
+makedumpfile: statically-linked-binary ./usr/bin/makedumpfile
