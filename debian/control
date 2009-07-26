@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 7.0.50), libelf-dev, libz-dev, libdw-dev (>= 0.141-
 
 Package: makedumpfile
 Architecture: i386 amd64 powerpc ia64 lpia
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}
 Recommends: crash, kexec-tools
 Description: VMcore extraction tool
  This program is used to extract a subset of the memory available either
