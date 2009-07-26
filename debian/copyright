@@ -5,10 +5,11 @@ It was downloaded from:
 http://sourceforge.net/project/showfiles.php?group_id=178938
 
 
-Tha package is public domain.
+The packaging is in the public domain.
 
 
-All other files are licensed under the GPL. Copyrights as follows:
+All other files are licensed under the GPL, version 2 or later.
+Copyrights as follows:
 
 diskdump_mod:
  * Copyright (C) 2004, 2005 David Anderson
@@ -24,8 +25,8 @@ ppc64.c:
 
 Copyright on the rest:
 
- * Copyright (C) 2006, 2007  NEC Corporation
+ * Copyright (C) 2006, 2007, 2008, 2009  NEC Corporation
 
 
 On Debian GNU systems, the complete text of the GNU General Public
-License can be found in `/usr/share/common-licenses/GPL'.
+License version 2 can be found in `/usr/share/common-licenses/GPL-2'.
