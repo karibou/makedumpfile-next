@@ -1,0 +1,21 @@
+Making changes to this source package
+=====================================
+
+This source package uses quilt to keep track of patches to the upstream
+source.  To get a patched copy of the source that is ready for editing,
+you can simply run
+
+  debian/rules patch
+
+from the "root" of the unpacked source tree.  If you would like to make
+additional changes, it's best to implement them as quilt patches.  To
+prepare for that, run
+
+  export QUILT_PATCHES=debian/patches
+
+After that, you can use quilt commands like 'quilt new <patch name>',
+'quilt add', and 'quilt refresh' to create your patches.  Please see the
+quilt(1) man page for reference.
+
+To disable specific patches, simply edit debian/patches/series and
+comment out the patches you want to disable with a '#' character.
