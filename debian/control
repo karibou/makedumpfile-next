@@ -3,11 +3,11 @@ Section: devel
 Priority: optional
 Maintainer: John Wright <jsw@debian.org>
 Standards-Version: 3.8.2
-Build-Depends: debhelper (>= 7), libelf-dev, libz-dev, libdw-dev (>= 0.141-2ubuntu1), zip, quilt
+Build-Depends: debhelper (>= 7.0.50), libelf-dev, libz-dev, libdw-dev (>= 0.141-2ubuntu1), zip, quilt (>= 0.46-7)
 
 Package: makedumpfile
 Architecture: i386 amd64 powerpc ia64 lpia
-Depends: ${shlibs:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Recommends: crash, kexec-tools
 Description: VMcore extraction tool
  This program is used to extract a subset of the memory available either

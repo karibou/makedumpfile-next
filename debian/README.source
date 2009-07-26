@@ -5,7 +5,7 @@ This source package uses quilt to keep track of patches to the upstream
 source.  To get a patched copy of the source that is ready for editing,
 you can simply run
 
-  debian/rules patch
+  dh_quilt_patch
 
 from the "root" of the unpacked source tree.  If you would like to make
 additional changes, it's best to implement them as quilt patches.  To

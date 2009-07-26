@@ -1,49 +1,19 @@
 #!/usr/bin/make -f
 
-include /usr/share/quilt/quilt.make
-
 # Figure out the git branch we're on
 branch = $(shell git symbolic-ref HEAD 2>/dev/null | sed s:refs/heads/::)
 
-build: patch
-	dh_testdir
-	$(MAKE)
+%:
+	dh --with quilt $@
 
-clean: clean1 unpatch
-clean1:
-	dh_testdir
-	dh_testroot
-	$(MAKE) clean
-	dh_clean
-
-install:
-	dh_testdir
-	dh_testroot
-	dh_prep
-	dh_installdirs
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/makedumpfile
+override_dh_auto_install:
+	dh_auto_install
 	install -D -m755 debian/initramfs-hook \
 		debian/makedumpfile/usr/share/initramfs-tools/hooks/makedumpfile
 
-binary-indep:
-
-binary-arch: build install
+guilt-patches:
 	dh_testdir
-	dh_testroot
-	dh_installchangelogs 
-	dh_installdocs README
-	dh_install
-	dh_strip
-	dh_compress
-	dh_fixperms
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-guilt-patches: unpatch
-	dh_testdir
+	dh_quilt_unpatch
 	test -d .git
 	test -n '$(branch)'
 
@@ -56,14 +26,13 @@ guilt-patches: unpatch
 	rsync -av --delete debian/patches/ .git/patches/$(branch)
 	touch .git/patches/$(branch)/status
 
-debian/patches: unpatch
+debian/patches:
 	dh_testdir
+	dh_quilt_unpatch
 	test -d .git
 
 	guilt pop -a
 	rm -rf debian/patches
 	guilt export debian/patches
 
-binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary \
-	guilt-patches debian/patches
+.PHONY: guilt-patches debian/patches
