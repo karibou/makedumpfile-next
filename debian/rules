@@ -8,8 +8,8 @@ branch = $(shell git symbolic-ref HEAD 2>/dev/null | sed s:refs/heads/::)
 
 override_dh_auto_install:
 	dh_auto_install
-	install -D -m755 debian/initramfs-hook \
-		debian/makedumpfile/usr/share/initramfs-tools/hooks/makedumpfile
+	install -D -m755 debian/makedumpfile-static.initramfs-hook \
+	  debian/makedumpfile-static/usr/share/initramfs-tools/hooks/makedumpfile
 
 guilt-patches:
 	dh_testdir

@@ -1,1 +1,2 @@
 use-install-in-makefile.patch
+build-static-and-dynamic-binaries.patch

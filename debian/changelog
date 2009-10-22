@@ -17,6 +17,8 @@ makedumpfile (1.3.4-1) UNRELEASED; urgency=low
       linked
     - Add Vcs-Git and Vcs-Browser fields to debian/control
     - Clarify the copyright description
+    - Provide a dynamically linked binary in the makedumpfile package,
+      and a static binary in the makedumpfile-static package
 
  -- John Wright <jsw@debian.org>  Wed, 21 Oct 2009 23:48:29 -0600
 

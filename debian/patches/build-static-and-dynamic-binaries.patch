@@ -1,0 +1,38 @@
+Build both static and dynamic binaries
+
+Signed-off-by: John Wright <jsw@debian.org>
+Index: makedumpfile/Makefile
+===================================================================
+--- makedumpfile.orig/Makefile	2009-10-22 00:59:49.000000000 -0600
++++ makedumpfile/Makefile	2009-10-22 01:00:14.000000000 -0600
+@@ -26,13 +26,16 @@
+ SRC_ARCH = x86.c x86_64.c ia64.c ppc64.c
+ OBJ_ARCH = x86.o x86_64.o ia64.o ppc64.o
+ 
+-all: makedumpfile
++all: makedumpfile makedumpfile-static
+ 
+ $(OBJ_ARCH): $(SRC_ARCH)
+ 	$(CC) $(CFLAGS_ARCH) -c -o ./$@ ./$(@:.o=.c) 
+ 
+-makedumpfile: $(SRC) $(OBJ_ARCH)
++makedumpfile-static: $(SRC) $(OBJ_ARCH)
+ 	$(CC) $(CFLAGS) $(OBJ_ARCH) -o $@ $< -static -ldw -lelf -lz
++
++makedumpfile: $(SRC) $(OBJ_ARCH)
++	$(CC) $(CFLAGS) $(OBJ_ARCH) -o $@ $< -ldw -lelf -lz
+ 	echo .TH MAKEDUMPFILE 8 \"$(DATE)\" \"makedumpfile v$(VERSION)\" \"Linux System Administrator\'s Manual\" > temp.8
+ 	grep -v "^.TH MAKEDUMPFILE 8" makedumpfile.8 >> temp.8
+ 	mv temp.8 makedumpfile.8
+@@ -40,9 +43,11 @@
+ 
+ clean:
+ 	rm -f $(OBJ) $(OBJ_ARCH) makedumpfile makedumpfile.8.gz
++	rm -f makedumpfile-static
+ 
+ install:
+ 	install -D -m755 ./makedumpfile ${DESTDIR}/usr/bin/makedumpfile
++	install -D -m755 ./makedumpfile-static ${DESTDIR}/bin/makedumpfile-static
+ 	install -D -m755 ./makedumpfile-R.pl ${DESTDIR}/usr/bin/makedumpfile-R.pl
+ 	install -D -m755 ./makedumpfile.8 ${DESTDIR}/usr/share/man/man8/makedumpfile.8
+ 

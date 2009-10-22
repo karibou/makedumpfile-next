@@ -1,5 +1,7 @@
 #!/bin/sh
 
+PREREQ=""
+
 prereqs()
 {
 	echo "$PREREQ"
@@ -12,10 +14,8 @@ prereqs)
 	;;
 esac
 
-[ -x /usr/bin/makedumpfile ] || exit 0
+[ -x /bin/makedumpfile-static ] || exit 0
 
 . /usr/share/initramfs-tools/hook-functions
 
-mkdir -p ${DESTDIR}/bin
-
-copy_exec /usr/bin/makedumpfile /bin
+copy_exec /bin/makedumpfile-static /bin/makedumpfile

@@ -16,3 +16,16 @@ Description: VMcore extraction tool
  via /dev/mem or /proc/vmcore (for crashdumps). It is used to get memory
  images without extra uneeded information (zero pages, userspace programs,
  etc).
+
+Package: makedumpfile-static
+Architecture: i386 amd64 powerpc ia64 lpia
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}
+Recommends: crash, kexec-tools
+Description: VMcore extraction tool - static binary
+ This program is used to extract a subset of the memory available either
+ via /dev/mem or /proc/vmcore (for crashdumps). It is used to get memory
+ images without extra uneeded information (zero pages, userspace programs,
+ etc).
+ .
+ This version is statically linked, so that it can be used in an
+ initramfs or other environment where not all libraries are available.
