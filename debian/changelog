@@ -1,5 +1,8 @@
-makedumpfile (1.3.3-1) UNRELEASED; urgency=low
+makedumpfile (1.3.4-1) UNRELEASED; urgency=low
 
+  * New upstream version.
+    - Remove debian/patches/02-Add_x86_64_linux-2.6.31.patch - already
+      included upstream
   * Upload to Debian. Changes from Ubuntu:
     - Switch to quilt from dpatch
     - Set myself as the maintainer
@@ -15,7 +18,7 @@ makedumpfile (1.3.3-1) UNRELEASED; urgency=low
     - Add Vcs-Git and Vcs-Browser fields to debian/control
     - Clarify the copyright description
 
- -- John Wright <jsw@debian.org>  Sun, 26 Jul 2009 12:08:30 +0200
+ -- John Wright <jsw@debian.org>  Wed, 21 Oct 2009 23:48:29 -0600
 
 makedumpfile (1.3.3-0ubuntu4) karmic; urgency=low
 
