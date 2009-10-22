@@ -3,7 +3,7 @@ Section: devel
 Priority: optional
 Maintainer: John Wright <jsw@debian.org>
 Standards-Version: 3.8.2
-Build-Depends: debhelper (>= 7.0.50), libelf-dev, libz-dev, libdw-dev (>= 0.141-2ubuntu1), zip, quilt (>= 0.46-7)
+Build-Depends: debhelper (>= 7.0.50), libelf-dev, libz-dev, libdw-dev (>= 0.141-2ubuntu1), quilt (>= 0.46-7)
 Vcs-Git: git://git.debian.org/collab-maint/makedumpfile.git
 Vcs-Browser: http://git.debian.org/?p=collab-maint/makedumpfile.git;a=summary
 
