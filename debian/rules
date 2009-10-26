@@ -11,6 +11,12 @@ override_dh_auto_install:
 	install -D -m755 debian/makedumpfile-static.initramfs-hook \
 	  debian/makedumpfile-static/usr/share/initramfs-tools/hooks/makedumpfile
 
+override_dh_installinit:
+	# Start right after syslog is available, and don't bother stopping
+	# (which just unloads the kdump kernel) so that we can catch crashes
+	# all the way until actual shutdown.
+	dh_installinit -pkdump-tools -- start 11 2 3 4 5 .
+
 guilt-patches:
 	dh_testdir
 	dh_quilt_unpatch

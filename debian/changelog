@@ -20,6 +20,8 @@ makedumpfile (1.3.4-1) UNRELEASED; urgency=low
     - Provide a dynamically linked binary in the makedumpfile package,
       and a static binary in the makedumpfile-static package
     - Remove unused Build-Depends on zip
+    - Build a kdump-tools package that includes an init script and tools
+      to configure kdump
 
  -- John Wright <jsw@debian.org>  Wed, 21 Oct 2009 23:48:29 -0600
 
