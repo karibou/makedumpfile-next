@@ -1,4 +1,4 @@
-makedumpfile (1.3.4-1) UNRELEASED; urgency=low
+makedumpfile (1.3.4-1) unstable; urgency=low
 
   * New upstream version.
     - Remove debian/patches/02-Add_x86_64_linux-2.6.31.patch - already
@@ -23,7 +23,7 @@ makedumpfile (1.3.4-1) UNRELEASED; urgency=low
     - Build a kdump-tools package that includes an init script and tools
       to configure kdump
 
- -- John Wright <jsw@debian.org>  Wed, 21 Oct 2009 23:48:29 -0600
+ -- John Wright <jsw@debian.org>  Thu, 12 Nov 2009 19:03:18 -0700
 
 makedumpfile (1.3.3-0ubuntu4) karmic; urgency=low
 
