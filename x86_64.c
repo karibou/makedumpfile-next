@@ -57,8 +57,70 @@ get_phys_base_x86_64(void)
 int
 get_machdep_info_x86_64(void)
 {
+	int i, j, mfns[MAX_X86_64_FRAMES];
+	unsigned long frame_mfn[MAX_X86_64_FRAMES];
+	unsigned long buf[MFNS_PER_FRAME];
+
 	info->section_size_bits = _SECTION_SIZE_BITS;
 
+	if (!(vt.mem_flags & MEMORY_XEN))
+		return TRUE;
+
+	/*
+	 * Get the information for translating domain-0's physical
+	 * address into machine address.
+	 */
+	if (!readmem(MADDR_XEN, pfn_to_paddr(info->p2m_mfn),
+					 &frame_mfn, PAGESIZE())) {
+		ERRMSG("Can't get p2m_mfn.\n");
+		return FALSE;
+	}
+
+	/*
+	 * Count the number of p2m frame.
+	 */
+	for (i = 0; i < MAX_X86_64_FRAMES; i++) {
+		mfns[i] = 0;
+		if (!frame_mfn[i])
+			break;
+
+		if (!readmem(MADDR_XEN, pfn_to_paddr(frame_mfn[i]), &buf,
+		    PAGESIZE())) {
+			ERRMSG("Can't get frame_mfn[%d].\n", i);
+			return FALSE;
+		}
+		for (j = 0; j < MFNS_PER_FRAME; j++) {
+			if (!buf[j])
+				break;
+
+			mfns[i]++;
+		}
+		info->p2m_frames += mfns[i];
+	}
+	info->p2m_mfn_frame_list
+	    = malloc(sizeof(unsigned long) * info->p2m_frames);
+	if (info->p2m_mfn_frame_list == NULL) {
+		ERRMSG("Can't allocate memory for p2m_mfn_frame_list. %s\n",
+		    strerror(errno));
+		return FALSE;
+	}
+
+	/*
+	 * Get p2m_mfn_frame_list.
+	 */
+	for (i = 0; i < MAX_X86_64_FRAMES; i++) {
+		if (!frame_mfn[i])
+			break;
+
+		if (!readmem(MADDR_XEN, pfn_to_paddr(frame_mfn[i]),
+		    &info->p2m_mfn_frame_list[i * MFNS_PER_FRAME],
+		    mfns[i] * sizeof(unsigned long))) {
+			ERRMSG("Can't get p2m_mfn_frame_list.\n");
+			return FALSE;
+		}
+		if (mfns[i] != MFNS_PER_FRAME)
+			break;
+	}
 	return TRUE;
 }
 
@@ -68,15 +130,29 @@ get_versiondep_info_x86_64(void)
 	/*
 	 * On linux-2.6.26, MAX_PHYSMEM_BITS is changed to 44 from 40.
 	 */
-	if (info->kernel_version < VERSION_LINUX_2_6_26)
+	if (info->kernel_version < KERNEL_VERSION(2, 6, 26))
 		info->max_physmem_bits  = _MAX_PHYSMEM_BITS_ORIG;
-	else
+	else if (info->kernel_version < KERNEL_VERSION(2, 6, 31))
 		info->max_physmem_bits  = _MAX_PHYSMEM_BITS_2_6_26;
+	else
+		info->max_physmem_bits  = _MAX_PHYSMEM_BITS_2_6_31;
 
-	if (info->kernel_version < VERSION_LINUX_2_6_27)
+	if (info->kernel_version < KERNEL_VERSION(2, 6, 27))
 		info->page_offset = __PAGE_OFFSET_ORIG;
 	else
 		info->page_offset = __PAGE_OFFSET_2_6_27;
+
+	if (info->kernel_version < KERNEL_VERSION(2, 6, 31)) {
+		info->vmalloc_start = VMALLOC_START_ORIG;
+		info->vmalloc_end   = VMALLOC_END_ORIG;
+		info->vmemmap_start = VMEMMAP_START_ORIG;
+		info->vmemmap_end   = VMEMMAP_END_ORIG;
+	} else {
+		info->vmalloc_start = VMALLOC_START_2_6_31;
+		info->vmalloc_end   = VMALLOC_END_2_6_31;
+		info->vmemmap_start = VMEMMAP_START_2_6_31;
+		info->vmemmap_end   = VMEMMAP_END_2_6_31;
+	}
 
 	return TRUE;
 }
@@ -188,12 +264,15 @@ vaddr_to_paddr_x86_64(unsigned long vaddr)
 			    "physical address.\n", vaddr);
 			return NOT_PADDR;
 		}
-	}
-	else if (vaddr >= __START_KERNEL_map)
+	} else if (vaddr >= __START_KERNEL_map) {
 		paddr = vaddr - __START_KERNEL_map + phys_base;
-	else
-		paddr = vaddr - PAGE_OFFSET;
 
+	} else {
+		if (vt.mem_flags & MEMORY_XEN)
+			paddr = vaddr - PAGE_OFFSET_XEN_DOM0;
+		else
+			paddr = vaddr - PAGE_OFFSET;
+	}
 	return paddr;
 }
 
@@ -288,8 +367,8 @@ int get_xen_info_x86_64(void)
 		ERRMSG("Can't get the value of xenheap_phys_end.\n");
 		return FALSE;
 	}
-	info->xen_heap_end = (xen_end >> PAGESHIFT());
 	info->xen_heap_start = 0;
+	info->xen_heap_end   = paddr_to_pfn(xen_end);
 
 	/*
 	 * pickled_id == domain addr for x86_64

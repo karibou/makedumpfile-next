@@ -112,6 +112,8 @@ isAnon(unsigned long mapping)
 #define PAGEOFFSET(X)		(((unsigned long)(X)) & (PAGESIZE() - 1))
 #define PAGEBASE(X)		(((unsigned long)(X)) & ~(PAGESIZE() - 1))
 #define _2MB_PAGE_MASK		(~((2*1048576)-1))
+#define paddr_to_pfn(X)		((unsigned long long)(X) >> PAGESHIFT())
+#define pfn_to_paddr(X)		((unsigned long long)(X) << PAGESHIFT())
 
 /*
  * for SPARSEMEM
@@ -446,10 +448,8 @@ do { \
 #define KVER_MAJ_SHIFT 24
 #define KVER_MIN_SHIFT 16
 #define KERNEL_VERSION(x,y,z) (((x) << KVER_MAJ_SHIFT) | ((y) << KVER_MIN_SHIFT) | (z))
-#define OLDEST_VERSION		(0x0206000f)	/* linux-2.6.15 */
-#define LATEST_VERSION		(0x0206001d)	/* linux-2.6.29 */
-#define VERSION_LINUX_2_6_26	(0x0206001a)	/* linux-2.6.26 */
-#define VERSION_LINUX_2_6_27	(0x0206001b)	/* linux-2.6.27 */
+#define OLDEST_VERSION		KERNEL_VERSION(2, 6, 15)/* linux-2.6.15 */
+#define LATEST_VERSION		KERNEL_VERSION(2, 6, 31)/* linux-2.6.31 */
 
 /*
  * vmcoreinfo in /proc/vmcore
@@ -482,6 +482,7 @@ do { \
  */
 #define TRUE		(1)
 #define FALSE		(0)
+#define ERROR		(-1)
 #define NOSPACE		(-1)    /* code of write-error due to nospace */
 #define MAX(a,b)	((a) > (b) ? (a) : (b))
 #define MIN(a,b)	((a) < (b) ? (a) : (b))
@@ -502,6 +503,10 @@ do { \
  * The value of dependence on machine
  */
 #define PAGE_OFFSET		(info->page_offset)
+#define VMALLOC_START		(info->vmalloc_start)
+#define VMALLOC_END		(info->vmalloc_end)
+#define VMEMMAP_START		(info->vmemmap_start)
+#define VMEMMAP_END		(info->vmemmap_end)
 
 #ifdef __x86__
 #define __PAGE_OFFSET		(0xc0000000)
@@ -535,12 +540,18 @@ do { \
 #endif /* x86 */
 
 #ifdef __x86_64__
-#define __PAGE_OFFSET_ORIG	(0xffff810000000000) /* linux-2.6.26, or former */
-#define __PAGE_OFFSET_2_6_27	(0xffff880000000000) /* linux-2.6.27, or later */
-#define VMALLOC_START		(0xffffc20000000000)
-#define VMALLOC_END		(0xffffe1ffffffffff)
-#define VMEMMAP_START		(0xffffe20000000000)
-#define VMEMMAP_END		(0xffffe2ffffffffff)
+#define __PAGE_OFFSET_ORIG	(0xffff810000000000) /* 2.6.26, or former */
+#define __PAGE_OFFSET_2_6_27	(0xffff880000000000) /* 2.6.27, or later  */
+
+#define VMALLOC_START_ORIG	(0xffffc20000000000) /* 2.6.30, or former */
+#define VMALLOC_START_2_6_31	(0xffffc90000000000) /* 2.6.31, or later  */
+#define VMALLOC_END_ORIG	(0xffffe1ffffffffff) /* 2.6.30, or former */
+#define VMALLOC_END_2_6_31	(0xffffe8ffffffffff) /* 2.6.31, or later  */
+
+#define VMEMMAP_START_ORIG	(0xffffe20000000000) /* 2.6.30, or former */
+#define VMEMMAP_START_2_6_31	(0xffffea0000000000) /* 2.6.31, or later  */
+#define VMEMMAP_END_ORIG	(0xffffe2ffffffffff) /* 2.6.30, or former */
+#define VMEMMAP_END_2_6_31	(0xffffeaffffffffff) /* 2.6.31, or later  */
 
 #define __START_KERNEL_map	(0xffffffff80000000)
 #define MODULES_VADDR		(0xffffffff88000000)
@@ -549,6 +560,7 @@ do { \
 #define _SECTION_SIZE_BITS	(27)
 #define _MAX_PHYSMEM_BITS_ORIG		(40)
 #define _MAX_PHYSMEM_BITS_2_6_26	(44)
+#define _MAX_PHYSMEM_BITS_2_6_31	(46)
 
 /*
  * 4 Levels paging
@@ -666,10 +678,11 @@ unsigned long long vaddr_to_paddr_x86_64(unsigned long vaddr);
 
 #ifdef __powerpc__ /* powerpc */
 int get_machdep_info_ppc64(void);
+unsigned long long vaddr_to_paddr_ppc64(unsigned long vaddr);
 #define get_phys_base()		TRUE
 #define get_machdep_info()	get_machdep_info_ppc64()
 #define get_versiondep_info()	TRUE
-#define vaddr_to_paddr(X)	vaddr_to_paddr_general(X)
+#define vaddr_to_paddr(X)	vaddr_to_paddr_ppc64(X)
 #endif          /* powerpc */
 
 #ifdef __ia64__ /* ia64 */
@@ -750,6 +763,7 @@ struct splitting_info {
 struct DumpInfo {
 	int32_t		kernel_version;      /* version of first kernel*/
 	struct timeval	timestamp;
+	struct utsname	system_utsname;
 
 	/*
 	 * General info:
@@ -771,6 +785,7 @@ struct DumpInfo {
 						flattened format */
 	int		flag_split;	     /* splitting vmcore */
 	int		flag_reassemble;     /* reassemble multiple dumpfiles into one */
+	int		flag_refiltering;    /* refilter from kdump-compressed file */
 	int		flag_force;	     /* overwrite existing stuff */
 	int		flag_exclude_xen_dom;/* exclude Domain-U from xen-kdump */
 	int             flag_dmesg;          /* dump the dmesg log out of the vmcore file */
@@ -786,6 +801,9 @@ struct DumpInfo {
 	unsigned long	phys_base;
 	unsigned long   kernel_start;
 	unsigned long   vmalloc_start;
+	unsigned long   vmalloc_end;
+	unsigned long	vmemmap_start;
+	unsigned long	vmemmap_end;
 
 	/*
 	 * diskdimp info:
@@ -823,6 +841,10 @@ struct DumpInfo {
 	 */
 	int			fd_memory;
 	char			*name_memory;
+	struct disk_dump_header	*dh_memory;
+	struct kdump_sub_header	*kh_memory;
+	struct dump_bitmap 		*bitmap_memory;
+	unsigned long			*valid_pages;
 
 	/*
 	 * Dump file info:
@@ -858,6 +880,10 @@ struct DumpInfo {
 	 */
 	off_t			offset_xen_crash_info;
 	unsigned long		size_xen_crash_info;
+	unsigned long long	dom0_mapnr;  /* The number of page in domain-0.
+					      * Different from max_mapnr.
+					      * max_mapnr is the number of page
+					      * in system. */
 	unsigned long xen_phys_start;
 	unsigned long xen_heap_start;	/* start mfn of xen heap area */
 	unsigned long xen_heap_end;	/* end mfn(+1) of xen heap area */
@@ -865,6 +891,9 @@ struct DumpInfo {
 	unsigned long max_page;
 	unsigned long alloc_bitmap;
 	unsigned long dom0;
+	unsigned long p2m_frames;
+	unsigned long p2m_mfn;
+	unsigned long *p2m_mfn_frame_list;
 	int	num_domain;
 	struct domain_list *domain_list;
 
@@ -895,20 +924,21 @@ struct symbol_table {
 	unsigned long long	pkmap_count_next;
 	unsigned long long	system_utsname;
 	unsigned long long	init_uts_ns;
-	unsigned long long 	_stext;
-	unsigned long long 	swapper_pg_dir;
-	unsigned long long 	init_level4_pgt;
-	unsigned long long 	vmlist;
-	unsigned long long 	phys_base;
-	unsigned long long 	node_online_map;
-	unsigned long long 	node_states;
-	unsigned long long 	node_memblk;
-	unsigned long long 	node_data;
-	unsigned long long 	pgdat_list;
-	unsigned long long 	contig_page_data;
-	unsigned long long   	log_buf;
-	unsigned long long   	log_buf_len;
-	unsigned long long   	log_end;
+	unsigned long long	_stext;
+	unsigned long long	swapper_pg_dir;
+	unsigned long long	init_level4_pgt;
+	unsigned long long	vmlist;
+	unsigned long long	phys_base;
+	unsigned long long	node_online_map;
+	unsigned long long	node_states;
+	unsigned long long	node_memblk;
+	unsigned long long	node_data;
+	unsigned long long	pgdat_list;
+	unsigned long long	contig_page_data;
+	unsigned long long	log_buf;
+	unsigned long long	log_buf_len;
+	unsigned long long	log_end;
+	unsigned long long	max_pfn;
 
 	/*
 	 * for Xen extraction
@@ -1093,6 +1123,9 @@ int get_pt_note_info(off_t off_note, unsigned long sz_note);
 int read_vmcoreinfo_xen(void);
 int exclude_xen_user_domain(void);
 unsigned long long get_num_dumpable(void);
+int __read_disk_dump_header(struct disk_dump_header *dh, char *filename);
+int read_disk_dump_header(struct disk_dump_header *dh, char *filename);
+int read_kdump_sub_header(struct kdump_sub_header *ksh, char *filename);
 void close_vmcoreinfo(void);
 int close_files_for_creating_dumpfile(void);
 
@@ -1106,7 +1139,8 @@ struct domain_list {
 	unsigned int  pickled_id;
 };
 
-#define PAGES_PER_MAPWORD (sizeof(unsigned long) * 8)
+#define PAGES_PER_MAPWORD 	(sizeof(unsigned long) * 8)
+#define MFNS_PER_FRAME		(info->page_size / sizeof(unsigned long))
 
 #ifdef __x86__
 #define HYPERVISOR_VIRT_START_PAE	(0xF5800000UL)
@@ -1130,8 +1164,10 @@ int get_xen_info_x86(void);
 
 #ifdef __x86_64__
 
-#define ENTRY_MASK	(~0x8000000000000fffULL)
+#define ENTRY_MASK		(~0x8000000000000fffULL)
+#define MAX_X86_64_FRAMES	(info->page_size / sizeof(unsigned long))
 
+#define PAGE_OFFSET_XEN_DOM0  (0xffff880000000000) /* different from linux */
 #define HYPERVISOR_VIRT_START (0xffff800000000000)
 #define HYPERVISOR_VIRT_END   (0xffff880000000000)
 #define DIRECTMAP_VIRT_START  (0xffff830000000000)
