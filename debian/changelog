@@ -1,3 +1,10 @@
+makedumpfile (1.5.5-3) unstable; urgency=low
+
+  * Add x32 armel armhf and ppa64el to Achitecture to close the delta with
+    Ubuntu
+
+ -- Louis Bouchard <louis.bouchard@ubuntu.com>  Thu, 30 Jan 2014 10:13:33 +0000
+
 makedumpfile (1.5.5-2) unstable; urgency=low
 
   * Drop debug kernel requirement from kdump-config
