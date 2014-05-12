@@ -63,3 +63,12 @@ KDUMP_COREDIR="/var/crash"
 
 # ---------------------------------------------------------------------------
 # Architecture specific Overrides:
+
+# ---------------------------------------------------------------------------
+# Remote dump facilities
+#
+# SSH="<user@server>"
+#
+# NFS="<nfs mount>"
+#
+# NFS4="<nfs mount>"
