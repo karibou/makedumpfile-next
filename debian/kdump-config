@@ -365,18 +365,27 @@ function kdump_save_core()
 function kdump_save_core_to_ssh()
 {
 	KDUMP_STAMP=`date +"%Y%m%d%H%M"`
-	KDUMP_REMOTE_HOST=$SSH
+	KDUMP_REMOTE_HOST="$SSH"
 	KDUMP_STAMPDIR="$KDUMP_COREDIR/$KDUMP_STAMP"
 	KDUMP_CORETEMP="$KDUMP_STAMPDIR/dump-incomplete"
 	KDUMP_COREFILE="$KDUMP_STAMPDIR/dump.$KDUMP_STAMP"
 	KDUMP_TMPDMESG="/tmp/dmesg.$KDUMP_STAMP"
 	KDUMP_DMESGFILE="$KDUMP_STAMPDIR/dmesg.$KDUMP_STAMP"
+	ERROR=0
 
 	ssh $KDUMP_REMOTE_HOST mkdir -p $KDUMP_STAMPDIR
+	ERROR=$?
+	# If remote connections fails, no need to continue
+	if [ $ERROR -ne 0 ] ; then
+		log_failure_msg "$NAME: Unable to reach remote server $KDUMP_REMOTE_HOST. No reason to continue"
+		logger -t $NAME "Unable to reach remote server $KDUMP_REMOTE_HOST. No reason to continue"
+		return 1
+	fi
 
 	log_action_msg "sending makedumpfile $MAKEDUMP_ARGS $vmcore_file to $KDUMP_REMOTE_HOST : $KDUMP_CORETEMP"
 	makedumpfile $MAKEDUMP_ARGS $vmcore_file | ssh $KDUMP_REMOTE_HOST dd of=$KDUMP_CORETEMP
-	if [ $? -ne 0 ] ; then
+	ERROR=$?
+	if [ $ERROR -ne 0 ] ; then
 		log_failure_msg "$NAME: makedumpfile failed, falling back to 'scp'"
 		logger -t $NAME "makedumpfile failed, falling back to 'scp'"
 		KDUMP_CORETEMP="$KDUMP_STAMPDIR/vmcore-incomplete"
@@ -386,20 +395,20 @@ function kdump_save_core_to_ssh()
 			log_failure_msg "$NAME: makedumpfile scp failed. The vmcore file will  not be available"
 			logger -t $NAME "makedumpfile scp failed. The vmcore file will  not be available"
 		else
-			success=1
+			ERROR=0
 		fi
 	else
-		success=1
+		ERROR=0
 	fi
 
 	# did we succeed?
-	if [ $success == 1 ]; then
+	if [ $ERROR -ne 0 ]; then
+		log_failure_msg "$NAME: failed to save vmcore in $KDUMP_REMOTE_HOST:$KDUMP_STAMPDIR"
+		logger -t $NAME "failed to save vmcore in $KDUMP_REMOTE_HOST:$KDUMP_STAMPDIR"
+	else
 		ssh $KDUMP_REMOTE_HOST mv $KDUMP_CORETEMP $KDUMP_COREFILE
 		log_success_msg "$NAME: saved vmcore in $KDUMP_REMOTE_HOST:$KDUMP_STAMPDIR"
 		logger -t $NAME "saved vmcore in $KDUMP_REMOTE_HOST:$KDUMP_STAMPDIR"
-	else
-		log_failure_msg "$NAME: failed to save vmcore in $KDUMP_REMOTE_HOST:$KDUMP_STAMPDIR"
-		logger -t $NAME "failed to save vmcore in $KDUMP_REMOTE_HOST:$KDUMP_STAMPDIR"
 	fi
 
 	log_action_msg "running makedumpfile --dump-dmesg $vmcore_file $KDUMP_TMPDMESG"
@@ -413,7 +422,6 @@ function kdump_save_core_to_ssh()
 		ERROR=$?
 	fi
 
-	panic "test"
 	# did we succeed?
 	if [ $ERROR == 0 ]; then
 		log_success_msg "$NAME: saved dmesg content in $KDUMP_REMOTE_HOST:$KDUMP_STAMPDIR"
