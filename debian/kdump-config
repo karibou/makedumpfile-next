@@ -438,7 +438,6 @@ function kdump_save_core_to_ssh()
 
 function kdump_propagate()
 {
-KDUMP_COREDIR=${KDUMP_COREDIR:=/var/crash}
 	KDUMP_SSH_KEY="${SSH_KEY:=/root/.ssh/kdump_id_rsa}"
 	KDUMP_REMOTE_HOST="$SSH"
 

@@ -65,7 +65,12 @@ KDUMP_COREDIR="/var/crash"
 # Architecture specific Overrides:
 
 # ---------------------------------------------------------------------------
-# Remote dump facilities
+# Remote dump facilities:
+# SSH - username and hostname of the remote server that will receive the dump
+# 	and dmesg files.
+# SSH_KEY - Full path of the ssh private key to be used to login to the remote
+# 	    server. use kdump-config propagate to send the public key to the
+# 	    remote server
 #
 # SSH="<user@server>"
 #
