@@ -24,6 +24,7 @@
 #	* unloading a kdump kernel
 #	* saving a vmcore kdump kernel
 #	* determining the status of kdump
+#	* propagate ssh key to remote host
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin
 NAME=${NAME:="kdump-config"}
@@ -66,17 +67,18 @@ function kdump_help()
 {
 cat <<EOHELP
 Usage:
-kdump-config {help|test|show|status|load|unload|savecore}"
-  help     - print this page
-  test     - Do a dry-run of the load command.  Show the kernels and
-             parameters that will be used and echo the kexec command.
-             The kexec command will not be executed.
-  show     - Show kdump status, kexec command, and any current parameters.
-  status   - evaluate /sys/kernel/kexec_crash_loaded and print a message
-  load     - Locate the kdump kernel, debug kernel, and establish links for
-             makedumpfile.  Then load the kdump kernel using kexec
-  unload   - unload the kdump kernel using kexec
-  savecore - use previously made links to save /proc/vmcore
+kdump-config {help|test|show|status|load|unload|savecore|propagate}"
+  help      - print this page
+  test      - Do a dry-run of the load command.  Show the kernels and
+              parameters that will be used and echo the kexec command.
+              The kexec command will not be executed.
+  show      - Show kdump status, kexec command, and any current parameters.
+  status    - evaluate /sys/kernel/kexec_crash_loaded and print a message
+  load      - Locate the kdump kernel, debug kernel, and establish links for
+              makedumpfile.  Then load the kdump kernel using kexec
+  unload    - unload the kdump kernel using kexec
+  savecore  - use previously made links to save /proc/vmcore
+  propagate - Send public ssh key to remote host for passwordless connection
 
 EOHELP
 }
@@ -434,6 +436,46 @@ function kdump_save_core_to_ssh()
 	fi
 }
 
+function kdump_propagate()
+{
+KDUMP_COREDIR=${KDUMP_COREDIR:=/var/crash}
+	KDUMP_SSH_KEY="${SSH_KEY:=/root/.ssh/kdump_id_rsa}"
+	KDUMP_REMOTE_HOST="$SSH"
+
+	# ssh key propagation is only needed
+	# if remote ssh dump is configured
+	if [ -z $KDUMP_REMOTE_HOST ];then
+		log_failure_msg "$NAME: Remote ssh dump is not configured. No reason to propagate"
+		logger -t $NAME "Remote ssh dump is not configured. No reason to propagate"
+		return 1;
+	fi
+
+	# Verify if the provided key exists and create it if needed
+	if [ -f $KDUMP_SSH_KEY ];then
+		echo "Using existing key $KDUMP_SSH_KEY"
+	else
+		echo "Need to generate a new ssh key..."
+		/usr/bin/ssh-keygen -t rsa -f $KDUMP_SSH_KEY -N "" 2>&1 > /dev/null
+	fi
+
+	KDUMP_SSH_USER=${KDUMP_REMOTE_HOST%@*}
+	KDUMP_SSH_TARGET=${KDUMP_REMOTE_HOST#*@}
+
+	ssh-copy-id -i $KDUMP_SSH_KEY $KDUMP_SSH_USER@$KDUMP_SSH_TARGET &>/dev/null
+	ERROR=$?
+
+	if [ $ERROR -ne 0 ];then
+		log_failure_msg "$NAME: $KDUMP_SSH_KEY failed to be sent to $KDUMP_REMOTE_HOST"
+		logger -t $NAME "$KDUMP_SSH_KEY failed to be sent to $KDUMP_REMOTE_HOST"
+		return 1;
+	else
+		logger -t $NAME "propagated ssh key $KDUMP_SSH_KEY to server $KDUMP_REMOTE_HOST"
+		echo "propagated ssh key $KDUMP_SSH_KEY to server $KDUMP_REMOTE_HOST"
+		return 0;
+	fi
+
+}
+
 
 
 case "$1" in
@@ -474,11 +516,14 @@ case "$1" in
 	fi
 	exit $?
 	;;
+  propagate)
+	kdump_propagate;
+	;;
   help|-h*|--h*)
 	kdump_help
 	;;
   *)
-	echo "Usage: $0 {help|test|show|status|load|unload|savecore}"
+	echo "Usage: $0 {help|test|show|status|load|unload|savecore|propagate}"
 	exit 1
 	;;
 esac

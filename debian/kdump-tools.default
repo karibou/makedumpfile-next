@@ -72,3 +72,5 @@ KDUMP_COREDIR="/var/crash"
 # NFS="<nfs mount>"
 #
 # NFS4="<nfs mount>"
+#
+# SSH_KEY="<path>"
