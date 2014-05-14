@@ -89,6 +89,15 @@ function kdump_show()
 	echo "KDUMP_SYSCTL:     $KDUMP_SYSCTL"
 	echo "KDUMP_COREDIR:    $KDUMP_COREDIR"
 	echo "crashkernel addr: $IOMEM_ADDR"
+	if [ -z $SSH ];then
+		echo "SSH:              local"
+	else
+		echo "SSH:              $SSH"
+	fi
+	HOSTTAG="${HOSTTAG:=ip}"
+	echo "HOSTTAG:          $HOSTTAG"
+	SSH_KEY="${SSH_KEY:=/root/.ssh/kdump_id_rsa}"
+	echo "SSH_KEY:          $SSH_KEY"
 	if [ -e $sys_kexec_crash -a `cat $sys_kexec_crash` -eq 1 ] ; then
 		echo "current state:    ready to kdump";
 	else
