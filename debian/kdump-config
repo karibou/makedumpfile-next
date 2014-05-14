@@ -367,9 +367,19 @@ function kdump_save_core()
 function kdump_save_core_to_ssh()
 {
 	KDUMP_SSH_KEY="${SSH_KEY:=/root/.ssh/kdump_id_rsa}"
-	KDUMP_STAMP=`date +"%Y%m%d%H%M"`
 	KDUMP_REMOTE_HOST="$SSH"
-	KDUMP_STAMPDIR="$KDUMP_COREDIR/$KDUMP_STAMP"
+	KDUMP_STAMP=`date +"%Y%m%d%H%M"`
+	HOSTTAG="${HOSTTAG:=ip}"
+
+	if [ $HOSTTAG = "hostname" ];then
+		THIS_HOST="$(hostname)"
+	else
+		THIS_HOST="$(hostname -I)"
+		set -a $THIS_HOST
+		THIS_HOST=$1
+	fi
+
+	KDUMP_STAMPDIR="$KDUMP_COREDIR/$THIS_HOST-$KDUMP_STAMP"
 	KDUMP_CORETEMP="$KDUMP_STAMPDIR/dump-incomplete"
 	KDUMP_COREFILE="$KDUMP_STAMPDIR/dump.$KDUMP_STAMP"
 	KDUMP_TMPDMESG="/tmp/dmesg.$KDUMP_STAMP"
