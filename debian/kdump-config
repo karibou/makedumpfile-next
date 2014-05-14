@@ -318,9 +318,6 @@ function kdump_unload()
 #	  3. else fallback to using:  makedumpfile -d 1 -c
 #	  4. else use cp
 #
-# TODO: implement different transport options other than
-# store to local disk
-#
 # Returns: 0/1 (success/fail)
 # Sets: KDUMP_STAMPDIR, KDUMP_COREFILE
 function kdump_save_core()
@@ -331,20 +328,50 @@ function kdump_save_core()
 	KDUMP_COREFILE="$KDUMP_STAMPDIR/dump.$KDUMP_STAMP"
 	KDUMP_DMESGFILE="$KDUMP_STAMPDIR/dmesg.$KDUMP_STAMP"
 
-	mkdir -p $KDUMP_STAMPDIR
+	# If we use NFS, verify that we can mount the FS
+	#
+	if [ -n "$NFS" ];then
+		mount -t nfs -o nolock -o tcp -o soft -o timeo=5 -o retrans=5 $NFS $KDUMP_COREDIR
+		ERROR=$?
+		if [ $ERROR -ne 0 ];then
+			log_failure_msg "$NAME: Unable to mount remote NFS directory $NFS. Cannot save core"
+			logger -t $NAME "Unable to mount remote NFS directory $NFS. Cannot save core"
+			return 1;
+		fi
+
+		# FS is mounted, see if we can write to it
+		#
+		mkdir -p $KDUMP_STAMPDIR
+		ERROR=$?
+
+		if [ $ERROR -ne 0 ];then
+			log_failure_msg "$NAME: Unable to write to the remote NFS directory $NFS. Cannot save core"
+			logger -t $NAME "Unable to write to the remote NFS directory $NFS. Cannot save core"
+			umount $KDUMP_COREDIR
+			UMNT_ERROR=$?
+			if [ $UMNT_ERROR -ne 0 ];then
+				log_failure_msg "$NAME: Unable to cleanly unmount the NFS file system"
+				logger -t $NAME "Unable to cleanly unmount the NFS file system"
+			fi
+		fi
+	else
+		mkdir -p $KDUMP_STAMPDIR
+	fi
 
 	log_action_msg "running makedumpfile $MAKEDUMP_ARGS $vmcore_file $KDUMP_CORETEMP"
 	makedumpfile $MAKEDUMP_ARGS $vmcore_file $KDUMP_CORETEMP
-	if [ $? -ne 0 ] ; then
+	ERROR=$?
+	if [ $ERROR -ne 0 ] ; then
 		log_failure_msg "$NAME: makedumpfile failed, falling back to 'cp'"
 		logger -t $NAME "makedumpfile failed, falling back to 'cp'"
 		KDUMP_CORETEMP="$KDUMP_STAMPDIR/vmcore-incomplete"
 		KDUMP_COREFILE="$KDUMP_STAMPDIR/vmcore.$KDUMP_STAMP"
 		cp $vmcore_file $KDUMP_CORETEMP
+		ERROR=$?
 	fi
 
 	# did we succeed?
-	if [ $? == 0 ]; then
+	if [ $ERROR == 0 ]; then
 		mv $KDUMP_CORETEMP $KDUMP_COREFILE
 		log_success_msg "$NAME: saved vmcore in $KDUMP_STAMPDIR"
 		logger -t $NAME "saved vmcore in $KDUMP_STAMPDIR"
@@ -365,12 +392,23 @@ function kdump_save_core()
 	if [ $ERROR == 0 ]; then
 		log_success_msg "$NAME: saved dmesg content in $KDUMP_STAMPDIR"
 		logger -t $NAME "saved dmesg content in $KDUMP_STAMPDIR"
-		return 0;
 	else
 		log_failure_msg "$NAME: failed to save dmesg content in $KDUMP_STAMPDIR"
 		logger -t $NAME "failed to save dmesg content in $KDUMP_STAMPDIR"
-		return 1;
 	fi
+
+	# If we use NFS, umount the remote FS
+	#
+	if [ -n "$NFS" ];then
+		umount $KDUMP_COREDIR
+		UMNT_ERROR=$?
+		if [ $UMNT_ERROR -ne 0 ] ; then
+			log_failure_msg "$NAME: Unable to cleanly unmount the NFS file system"
+			logger -t $NAME "Unable to cleanly unmount the NFS file system"
+		fi
+	fi
+
+	return $ERROR
 }
 
 function kdump_save_core_to_ssh()
@@ -528,7 +566,7 @@ case "$1" in
 	exit 0;
 	;;
   savecore)
-	if ! [ -z $SSH ] || ! [ -z $NFS ] || [ -z NFS4 ]];then
+	if ! [ -z $SSH ];then
 		kdump_save_core_to_ssh
 	else
 		kdump_save_core
