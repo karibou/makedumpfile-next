@@ -337,6 +337,7 @@ function kdump_save_core()
 	# If we use NFS, verify that we can mount the FS
 	#
 	if [ -n "$NFS" ];then
+		log_action_msg "Mounting NFS mountpoint $NFS ..."
 		mount -t nfs -o nolock -o tcp -o soft -o timeo=5 -o retrans=5 $NFS $KDUMP_COREDIR
 		ERROR=$?
 		if [ $ERROR -ne 0 ];then
@@ -359,6 +360,9 @@ function kdump_save_core()
 				log_failure_msg "$NAME: Unable to cleanly unmount the NFS file system"
 				logger -t $NAME "Unable to cleanly unmount the NFS file system"
 			fi
+		else
+			log_action_msg "Dumping to NFS mountpoint $NFS/$KDUMP_STAMP"
+			logger -t $NAME "Dumping to NFS mountpoint $NFS/$KDUMP_STAMP"
 		fi
 	else
 		mkdir -p $KDUMP_STAMPDIR
