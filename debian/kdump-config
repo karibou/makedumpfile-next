@@ -157,6 +157,10 @@ function check_kdump_support()
 		log_failure_msg "no crashkernel= parameter in the kernel cmdline"
 		[ ! $DRY_RUN ] && exit 1;
 	fi
+        if [ -n "$NFS" ] && [ -n "$SSH" ];then
+		log_failure_msg "\$SSH and \$NFS cannot be define concurrently"
+		[ ! $DRY_RUN ] && exit 1;
+	fi
 }
 
 # check_relocatable: check if the given kernel config is relocatable
