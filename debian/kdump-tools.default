@@ -34,8 +34,12 @@ USE_KDUMP=0
 #     is the default.
 #     Example - start a shell if the vmcore copy fails:
 #         KDUMP_FAIL_CMD="echo 'makedumpfile FAILED.'; /bin/bash; reboot -f"
+# KDUMP_DUMP_DMESG - This variable controls if the dmesg buffer is dumped.
+#     If unset or set to 1, the dmesg buffer is dumped. If set to 0, the dmesg
+#     buffer is not dumped.
 KDUMP_COREDIR="/var/crash"
 #KDUMP_FAIL_CMD="reboot -f"
+#KDUMP_DUMP_DMESG=
 
 
 # ---------------------------------------------------------------------------

@@ -1,3 +1,16 @@
+makedumpfile (1.5.6-2) unstable; urgency=medium
+
+  * [ Juerg Haefliger <juerg.haefliger@hp.com> ]
+    Make the dumping of dmesg configurable
+
+    Dumping the dmesg buffer has shown to be problematic when kernels
+    change. This patch introduces a new config variable that can turn
+    the dmesg dump off.  The default behaviour unchanged, i.e., the
+    dmesg buffer is dumped.
+    Closes: 747173
+
+ -- Louis Bouchard <louis.bouchard@ubuntu.com>  Fri, 23 May 2014 12:33:24 +0200
+
 makedumpfile (1.5.6-1) unstable; urgency=medium
 
   [ Louis Bouchard ]
