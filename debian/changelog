@@ -1,3 +1,13 @@
+makedumpfile (1.5.6-3) unstable; urgency=medium
+
+  * New networked kernel dump functionality
+    - Allow for NFS and SSH remote dumps
+    - Will propagate SSH key to allow remote dumping
+    - kdump-config show will display new configuration
+    - /etc/default/kdump-tools has new variable definitions
+
+ -- Louis Bouchard <louis.bouchard@ubuntu.com>  Mon, 16 Jun 2014 16:50:03 +0200
+
 makedumpfile (1.5.6-2) unstable; urgency=medium
 
   * [ Juerg Haefliger <juerg.haefliger@hp.com> ]
