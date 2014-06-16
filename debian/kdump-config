@@ -31,11 +31,6 @@ NAME=${NAME:="kdump-config"}
 
 . /lib/lsb/init-functions
 . /lib/init/vars.sh
-#
-# for debug only
-#
-. /usr/share/initramfs-tools/scripts/functions
-
 
 # Global Setup
 KDUMP_DEFAULTS=/etc/default/kdump-tools
