@@ -321,6 +321,29 @@ function kdump_unload()
 	fi
 }
 
+#
+# Return the name of the subdirectory to store core file.
+#	Will add hostname/IP according to the value of
+#	HOSTTAG if networked dump is selected
+
+function define_stampdir()
+{
+	STAMP=$1
+	HOSTTAG="${HOSTTAG:=ip}"
+
+	if [ -z "$SSH" ] && [ -z "$NFS" ]; then
+		echo "$KDUMP_COREDIR/$STAMP"
+	elif [ $HOSTTAG = "hostname" ];then
+		echo "$KDUMP_COREDIR/$(hostname)-$STAMP"
+	else
+		THIS_HOST="$(hostname -I)"
+		set -a $THIS_HOST
+		THIS_HOST=$1
+		echo "$KDUMP_COREDIR/$THIS_HOST-$STAMP"
+	fi
+}
+
+
 # Saving the vmcore:
 #	Our priorities are:
 #	  1. If the makedumpfile config link is valid, use that
@@ -333,7 +356,7 @@ function kdump_unload()
 function kdump_save_core()
 {
 	KDUMP_STAMP=`date +"%Y%m%d%H%M"`
-	KDUMP_STAMPDIR="$KDUMP_COREDIR/$KDUMP_STAMP"
+	KDUMP_STAMPDIR=$(define_stampdir $KDUMP_STAMP)
 	KDUMP_CORETEMP="$KDUMP_STAMPDIR/dump-incomplete"
 	KDUMP_COREFILE="$KDUMP_STAMPDIR/dump.$KDUMP_STAMP"
 	KDUMP_DMESGFILE="$KDUMP_STAMPDIR/dmesg.$KDUMP_STAMP"
@@ -429,18 +452,10 @@ function kdump_save_core_to_ssh()
 {
 	KDUMP_SSH_KEY="${SSH_KEY:=/root/.ssh/kdump_id_rsa}"
 	KDUMP_REMOTE_HOST="$SSH"
+
 	KDUMP_STAMP=`date +"%Y%m%d%H%M"`
-	HOSTTAG="${HOSTTAG:=ip}"
+	KDUMP_STAMPDIR=$(define_stampdir $KDUMP_STAMP)
 
-	if [ $HOSTTAG = "hostname" ];then
-		THIS_HOST="$(hostname)"
-	else
-		THIS_HOST="$(hostname -I)"
-		set -a $THIS_HOST
-		THIS_HOST=$1
-	fi
-
-	KDUMP_STAMPDIR="$KDUMP_COREDIR/$THIS_HOST-$KDUMP_STAMP"
 	KDUMP_CORETEMP="$KDUMP_STAMPDIR/dump-incomplete"
 	KDUMP_COREFILE="$KDUMP_STAMPDIR/dump.$KDUMP_STAMP"
 	KDUMP_TMPDMESG="/tmp/dmesg.$KDUMP_STAMP"
