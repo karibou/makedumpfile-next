@@ -473,6 +473,7 @@ function kdump_save_core()
 		logger -t $NAME "failed to save dmesg content in $KDUMP_STAMPDIR"
 	    fi
 	fi
+	save_kdump_kern_log
 	# If we use NFS, umount the remote FS
 	#
 	if [ -n "$NFS" ];then
