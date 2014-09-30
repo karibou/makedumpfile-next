@@ -22,7 +22,7 @@ Package: kdump-tools
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}, makedumpfile, kexec-tools
 Description: scripts and tools for automating kdump (Linux crash dumps)
- kdump-tools provides an init script and a configuration script for
+ kdump-tools provides init scripts and a configuration script for
  automating the use of kdump.  It uses the makedumpfile utility to
  reduce the size of the /proc/vmcore file based on user preferences.
  .
