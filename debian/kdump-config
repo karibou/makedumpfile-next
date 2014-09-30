@@ -46,6 +46,7 @@ ARCH=`uname -m`
 KDUMP_SYSCTL=${KDUMP_SYSCTL:="kernel.panic_on_oops=1"}
 KDUMP_COREDIR=${KDUMP_COREDIR:=/var/crash}
 KDUMP_DUMP_DMESG=${KDUMP_DUMP_DMESG:=1}
+KDUMP_SAVE_KERNLOG=${KDUMP_SAVE_KERNLOG:=1}
 MAKEDUMP_ARGS=${MAKEDUMP_ARGS:="-c -d 31"}
 KDUMP_CMDLINE_APPEND=${KDUMP_CMDLINE_APPEND:="irqpoll maxcpus=1 nousb"}
 [ -d $KDUMP_COREDIR ] || mkdir -p $KDUMP_COREDIR ;
@@ -57,8 +58,43 @@ vmcore_file=/proc/vmcore
 sys_kexec_crash=/sys/kernel/kexec_crash_loaded
 kexec_cmd_file=$KDUMP_COREDIR/kexec_cmd
 
+# For use by kdump_save_core(), save_kdump_kern_log() and klogger():
+KDUMP_STAMP=`date +"%Y%m%d%H%M"`
+KDUMP_STAMPDIR="$KDUMP_COREDIR/$KDUMP_STAMP"
+KDUMP_KERNLOG="$KDUMP_STAMPDIR/kdumpkern-$KDUMP_STAMP.log"
+
+
 # Utility Functions
 #
+
+function save_kdump_kern_log()
+{
+	[ "$runlevel" == "S" ] || return
+
+	# No syslog at runlevel S;  save kdump kernel's dmesg for debug.
+	# Use --read-clear so we can incrementally append any new messages
+	# on each call.  We expect to be called only from kdump_save_core()
+	# and in this case we'll reboot on exit anyway.
+	[ "$KDUMP_SAVE_KERNLOG" != "0" ] || return	# save disabled
+	dmesg --read-clear >>$KDUMP_KERNLOG
+}
+
+# klogger() -- 'logger(1) replacement for runlevel 'S'.
+#  When run at runlevel S, syslog is generally not available.
+#  In that case, "logger" is a no-op;  Write the message to /dev/kmsg
+#  so it gets saved by save_kdump_kern_log().
+#  Call with logger arguments:  "$NAME  $MESSAGE" -- NO '-t'
+function klogger()
+{
+	if [ "$runlevel" != "S" ]; then
+		logger -t "$@"
+	elif [ "$KDUMP_SAVE_KERNLOG" != "0" ]; then
+		# TODO timestamp messages?
+		echo "$@" >>/dev/kmsg || true
+	fi
+}
+
+
 function kdump_help()
 {
 cat <<EOHELP
@@ -348,11 +384,12 @@ function define_stampdir()
 #	  4. else use cp
 #
 # Returns: 0/1 (success/fail)
-# Sets: KDUMP_STAMPDIR, KDUMP_COREFILE
+# Sets: KDUMP_COREFILE
 function kdump_save_core()
 {
 	KDUMP_STAMP=`date +"%Y%m%d%H%M"`
 	KDUMP_STAMPDIR=$(define_stampdir $KDUMP_STAMP)
+	local -i ERROR ret
 	KDUMP_CORETEMP="$KDUMP_STAMPDIR/dump-incomplete"
 	KDUMP_COREFILE="$KDUMP_STAMPDIR/dump.$KDUMP_STAMP"
 	KDUMP_DMESGFILE="$KDUMP_STAMPDIR/dmesg.$KDUMP_STAMP"
@@ -563,7 +600,8 @@ function kdump_propagate()
 
 }
 
-
+# =============================================================================
+# main()
 
 case "$1" in
   test)
