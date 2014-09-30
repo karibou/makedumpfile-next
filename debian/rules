@@ -7,7 +7,10 @@ override_dh_auto_build:
 	dh_auto_build -- LINKTYPE=dynamic
 
 override_dh_installinit:
-	# Start right after syslog is available, and don't bother stopping
-	# (which just unloads the kdump kernel) so that we can catch crashes
-	# all the way until actual shutdown.
-	dh_installinit -pkdump-tools -- start 11 2 3 4 5 .
+	# Start kdump-tools [kdump kernel load] right after syslog is
+	# available, and don't bother stopping (which just unloads the kdump
+	# kernel) so that we can catch crashes all the way until actual shutdown.
+	dh_installinit --package=kdump-tools --name=kdump-tools
+	# Start kdump-savecore at runlevel S after file systems available.
+	# Reboots after savecore without starting multi-user services.
+	dh_installinit --package=kdump-tools --name=kdump-savecore
