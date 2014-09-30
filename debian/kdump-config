@@ -428,12 +428,14 @@ function kdump_save_core()
 		mkdir -p $KDUMP_STAMPDIR
 	fi
 
+	save_kdump_kern_log
+
 	log_action_msg "running makedumpfile $MAKEDUMP_ARGS $vmcore_file $KDUMP_CORETEMP"
 	makedumpfile $MAKEDUMP_ARGS $vmcore_file $KDUMP_CORETEMP
 	ERROR=$?
 	if [ $ERROR -ne 0 ] ; then
 		log_failure_msg "$NAME: makedumpfile failed, falling back to 'cp'"
-		logger -t $NAME "makedumpfile failed, falling back to 'cp'"
+		klogger $NAME "makedumpfile failed, falling back to 'cp'"
 		KDUMP_CORETEMP="$KDUMP_STAMPDIR/vmcore-incomplete"
 		KDUMP_COREFILE="$KDUMP_STAMPDIR/vmcore.$KDUMP_STAMP"
 		cp $vmcore_file $KDUMP_CORETEMP
@@ -443,11 +445,13 @@ function kdump_save_core()
 	# did we succeed?
 	if [ $ERROR == 0 ]; then
 		mv $KDUMP_CORETEMP $KDUMP_COREFILE
-		log_success_msg "$NAME: saved vmcore in $KDUMP_STAMPDIR"
-		logger -t $NAME "saved vmcore in $KDUMP_STAMPDIR"
+		log_success_msg "$NAME: saved vmcore in $KDUMP_COREFILE"
+		klogger $NAME "saved vmcore in $KDUMP_COREFILE"
+		ret=0
 	else
-		log_failure_msg "$NAME: failed to save vmcore in $KDUMP_STAMPDIR"
-		logger -t $NAME "failed to save vmcore in $KDUMP_STAMPDIR"
+		log_failure_msg "$NAME: failed to save vmcore; partial dump in $KDUMP_CORETEMP"
+		klogger $NAME "failed to save vmcore; partial dump in $KDUMP_CORETEMP"
+		ret=1
 	fi
 
 	# dump the dmesg buffer
@@ -598,6 +602,8 @@ function kdump_propagate()
 		return 0;
 	fi
 
+	save_kdump_kern_log     # Append any new kernel messages
+	return $ret
 }
 
 # =============================================================================
