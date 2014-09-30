@@ -73,3 +73,26 @@ KDUMP_COREDIR="/var/crash"
 
 # ---------------------------------------------------------------------------
 # Architecture specific Overrides:
+
+# ---------------------------------------------------------------------------
+# Remote dump facilities:
+# SSH - username and hostname of the remote server that will receive the dump
+# 	and dmesg files.
+# SSH_KEY - Full path of the ssh private key to be used to login to the remote
+# 	    server. use kdump-config propagate to send the public key to the
+# 	    remote server
+# HOSTTAG - Select if hostname of IP address will be used as a prefix to the
+#           timestamped directory when sending files to the remote server.
+#           'ip' is the default.
+# NFS -     Hostname and mount point of the NFS server configured to receive
+#           the crash dump. The syntax must be {HOSTNAME}:{MOUNTPOINT}
+#           (e.g. remote:/var/crash)
+#
+# SSH="<user at server>"
+#
+# SSH_KEY="<path>"
+#
+# HOSTTAG="hostname|[ip]"
+#
+# NFS="<nfs mount>"
+#
