@@ -1,3 +1,9 @@
+makedumpfile (1.5.7-2~runlevelS) UNRELEASED; urgency=medium
+
+  * Import kernel dump at runlevel S patch provided by Lee
+
+ -- Louis Bouchard <louis.bouchard@ubuntu.com>  Tue, 30 Sep 2014 17:59:37 +0200
+
 makedumpfile (1.5.7-1) unstable; urgency=medium
 
   * New upstream version includes :
