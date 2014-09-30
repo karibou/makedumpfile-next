@@ -202,7 +202,7 @@ function check_kdump_support()
 #          1 otherwise.
 function check_relocatable()
 {
-	if [ $ARCH = "ia64" ]; then
+	if [ $ARCH == "ia64" ]; then
 		# Linux is always relocatable on ia64
 		return 0
 	elif grep -q 'CONFIG_RELOCATABLE=y' $1; then
@@ -279,6 +279,7 @@ function locate_kdump_kernel()
 #			a. strip out the crashkernel= parameter.
 #			b. strip out the abm= parameter.
 #			c. append KDUMP_CMDLINE_APPEND from defaults file
+#
 # Sets:    KEXEC_CMD
 # Returns: none. prints warnings or exit
 function kdump_load()
@@ -295,7 +296,7 @@ function kdump_load()
 			KEXEC_CMD="$KEXEC_CMD --args-linux"
 		fi
 	fi
-		
+
 	# KDUMP_KEXEC_ARGS, if non-empty, comes from the defaults file.
 	if [ -n "$KDUMP_KEXEC_ARGS" ] ; then
 		KEXEC_CMD="$KEXEC_CMD $KDUMP_KEXEC_ARGS"
