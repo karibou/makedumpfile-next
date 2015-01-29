@@ -310,9 +310,10 @@ function fadump_register()
 	logger -t $NAME "fadump registered successfully"
 
 	# Last step: make sure panic_on_oops is enabled
-	if [ -x /sbin/sysctl -a "$KDUMP_SYSCTL" != " " ] ; then
-		sysctl -w $KDUMP_SYSCTL >/dev/null
-	fi
+        PANIC_ON_OOPS=`/sbin/sysctl kernel.panic_on_oops | cut -d" " -f3`
+        if [ $PANIC_ON_OOPS != "1" ] ; then
+                sysctl -w kernel.panic_on_oops=1 >/dev/null
+        fi
 }
 
 # Returns: none. prints warnings or exit
@@ -393,9 +394,11 @@ function kdump_load()
 	fi
 
 	# Last step: make sure panic_on_oops is enabled
-	if [ -x /sbin/sysctl -a "$KDUMP_SYSCTL" != " " ] ; then
-		sysctl -w $KDUMP_SYSCTL >/dev/null
-	fi
+        PANIC_ON_OOPS=`/sbin/sysctl kernel.panic_on_oops | cut -d" " -f3`
+        if [ $PANIC_ON_OOPS != "1" ] ; then
+                sysctl -w kernel.panic_on_oops=1 >/dev/null
+        fi
+
 }
 
 # Returns: none. prints warnings or exit
