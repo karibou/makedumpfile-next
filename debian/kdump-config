@@ -55,7 +55,18 @@ IOMEM_ADDR=`grep -i "Crash kernel" /proc/iomem | sed "s/-..*//" | sed "s/^[ 0]*/
 # Constants
 vmcore_file=/proc/vmcore
 sys_kexec_crash=/sys/kernel/kexec_crash_loaded
+sys_fadump_enabled=/sys/kernel/fadump_enabled
+sys_fadump_registered=/sys/kernel/fadump_registered
 kexec_cmd_file=$KDUMP_COREDIR/kexec_cmd
+
+# DUMP_MODE = kdump/fadump
+# The default dump mode is kdump.
+DUMP_MODE="kdump"
+
+# If /sys/kernel/fadump_enabled is set to `1`, use fadump as dump mechanism
+if [ -e $sys_fadump_enabled ] && [ `cat $sys_fadump_enabled` -eq 1 ]; then
+	DUMP_MODE="fadump"
+fi
 
 # Utility Functions
 #
@@ -65,14 +76,19 @@ cat <<EOHELP
 Usage:
 kdump-config {help|test|show|status|load|unload|savecore|propagate}"
   help      - print this page
-  test      - Do a dry-run of the load command.  Show the kernels and
-              parameters that will be used and echo the kexec command.
-              The kexec command will not be executed.
-  show      - Show kdump status, kexec command, and any current parameters.
-  status    - evaluate /sys/kernel/kexec_crash_loaded and print a message
+  test      - Do a dry-run of kdump kernel load command by showing
+              the kernels and parameters that will be used and echo'ing
+              the kexec command. The kexec command will not be executed.
+              If using fadump, check if required sysfs directories exist.
+  show      - Show dump mode, status, any current parameters.
+              Show kexec command for kdump.
+  status    - evaluate /sys/kernel/{kexec_crash_loaded,fadump_registered}
+              depending on dump mode. Print appropriate message
   load      - Locate the kdump kernel, debug kernel, and establish links for
               makedumpfile.  Then load the kdump kernel using kexec
+              If using fadump, register.
   unload    - unload the kdump kernel using kexec
+              If using fadump, unregister.
   savecore  - use previously made links to save /proc/vmcore
   propagate - Send public ssh key to remote host for passwordless connection
 
@@ -81,10 +97,13 @@ EOHELP
 
 function kdump_show()
 {
+	echo "DUMP_MODE:        $DUMP_MODE"
 	echo "USE_KDUMP:        $USE_KDUMP"
 	echo "KDUMP_SYSCTL:     $KDUMP_SYSCTL"
 	echo "KDUMP_COREDIR:    $KDUMP_COREDIR"
-	echo "crashkernel addr: $IOMEM_ADDR"
+	if [ "$DUMP_MODE" == "kdump" ]; then
+		echo "crashkernel addr: $IOMEM_ADDR"
+	fi
 
 	if [ -n "$SSH" ];then
 		echo "SSH:              $SSH"
@@ -98,6 +117,16 @@ function kdump_show()
 	if [ -n "$SSH" ] || [ -n "$NFS" ]; then
 		HOSTTAG="${HOSTTAG:=ip}"
 		echo "HOSTTAG:          $HOSTTAG"
+	fi
+
+	if [ "$DUMP_MODE" == "fadump" ]; then
+		if [ -e $sys_fadump_registered ] &&
+			[ `cat $sys_fadump_registered` -eq 1 ] ; then
+			echo "current state:    ready to fadump";
+		else
+			echo "current state:    Not ready to fadump";
+		fi
+		return 0
 	fi
 
 	if [ -e $sys_kexec_crash -a `cat $sys_kexec_crash` -eq 1 ] ; then
@@ -128,6 +157,29 @@ function kdump_test()
 	echo "  $KDUMP_INITRD"
 	echo "kexec command to be used:"
 	echo "  $KEXEC_CMD"
+}
+
+# check_fadump_support:  Other miscellaneous checks go here:
+# 1: if USE_KDUMP is 0, don't set up fadump.
+# 2: -e /sys/kernel/fadump_registered indicates that this kernel
+#    thinks it supports fadump
+#
+# Returns: none. prints warnings or exit
+function check_fadump_support()
+{
+	if [ -z "$USE_KDUMP" -o "$USE_KDUMP" == "0" ] ; then
+		log_failure_msg "$KDUMP_DEFAULTS: USE_KDUMP is not set or zero"
+		[ ! $DRY_RUN ] && exit 1;
+	fi
+	if [ ! -e $sys_fadump_registered ]; then
+		log_failure_msg "fadump is not configured in this kernel."
+		log_failure_msg "Try passing \"fadump=on\" to enable fadump"
+		[ ! $DRY_RUN ] && exit 1;
+	fi
+        if [ -n "$NFS" ] && [ -n "$SSH" ];then
+		log_failure_msg "\$SSH and \$NFS cannot be defined concurrently"
+		[ ! $DRY_RUN ] && exit 1;
+	fi
 }
 
 # check_kdump_support:  Other miscellaneous checks go here:
@@ -241,6 +293,43 @@ function locate_kdump_kernel()
 	return 0;
 }
 
+# Register firmware-assisted dump as the dump mechanism
+# Returns: none. prints warnings or exit
+function fadump_register()
+{
+	# set fadump registered sys node to `1` to register fadump
+	echo 1 > $sys_fadump_registered
+	rc=`cat $sys_fadump_registered`
+	if [ $rc -ne 1 ] ; then
+		log_failure_msg "fadump registering failed"
+		logger -t $NAME "fadump registering failed"
+		[ ! $DRY_RUN ] && exit 1;
+	fi
+
+	log_success_msg "fadump registered successfully"
+	logger -t $NAME "fadump registered successfully"
+
+	# Last step: make sure panic_on_oops is enabled
+	if [ -x /sbin/sysctl -a "$KDUMP_SYSCTL" != " " ] ; then
+		sysctl -w $KDUMP_SYSCTL >/dev/null
+	fi
+}
+
+# Returns: none. prints warnings or exit
+function fadump_unregister()
+{
+	# set fadump registered sys node to `0` to un-register fadump
+	echo 0 > $sys_fadump_registered
+	rc=`cat $sys_fadump_registered`
+	if [ $rc -ne 0 ] ; then
+		log_failure_msg "fadump un-registering failed"
+		logger -t $NAME "fadump un-registering failed"
+		[ ! $DRY_RUN ] && exit 1;
+	fi
+
+	log_success_msg "fadump un-registered successfully"
+	logger -t $NAME "fadump un-registered successfully"
+}
 
 #
 # Load the already determined kdump kernel and kdump initrd using kexec
@@ -579,30 +668,56 @@ function kdump_propagate()
 case "$1" in
   test)
 	DRY_RUN="true"
-	check_kdump_support;
-	locate_kdump_kernel;
-	kdump_load;
-	kdump_test
+	if [ "$DUMP_MODE" == "fadump" ]; then
+		check_fadump_support
+	else
+		check_kdump_support;
+		locate_kdump_kernel;
+		kdump_load;
+		kdump_test
+	fi
 	;;
   show)
 	DRY_RUN="true"
-	check_kdump_support;
+	if [ "$DUMP_MODE" == "fadump" ]; then
+		check_fadump_support;
+	else
+		check_kdump_support;
+	fi
 	kdump_show
 	;;
   load)
-	check_kdump_support;
-	locate_kdump_kernel;
-	kdump_load;
+	if [ "$DUMP_MODE" == "fadump" ]; then
+		check_fadump_support;
+		fadump_register
+	else
+		check_kdump_support;
+		locate_kdump_kernel;
+		kdump_load
+	fi
 	;;
   unload)
-	kdump_unload;
+	if [ "$DUMP_MODE" == "fadump" ]; then
+		fadump_unregister
+	else
+		kdump_unload
+	fi
 	;;
   status)
-	check_kdump_support;
-	if [ `cat $sys_kexec_crash` -eq 1 ] ; then
-		echo "current state   : ready to kdump";
+	if [ "$DUMP_MODE" == "fadump" ]; then
+		check_fadump_support
+		if [ `cat $sys_fadump_registered` -eq 1 ] ; then
+			echo "current state   : ready to fadump";
+		else
+			echo "current state   : Not ready to fadump";
+		fi
 	else
-		echo "current state   : Not ready to kdump";
+		check_kdump_support;
+		if [ `cat $sys_kexec_crash` -eq 1 ] ; then
+			echo "current state   : ready to kdump";
+		else
+			echo "current state   : Not ready to kdump";
+		fi
 	fi
 	exit 0;
 	;;
