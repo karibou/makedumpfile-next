@@ -1,3 +1,14 @@
+makedumpfile (1:1.5.7-5) experimental; urgency=medium
+
+  * Fix panic_on_oops erratic handling
+    Closes: #776582
+
+  [ Hari Bathini <hbathini@linux.vnet.ibm.com> ]
+  * Add firmware assisted dump support
+    Closes: #776574, LP: #1415562
+
+ -- Louis Bouchard <louis.bouchard@ubuntu.com>  Thu, 30 Jan 2015 14:04:47 +0100
+
 makedumpfile (1:1.5.7-4) experimental; urgency=medium
 
   * Enable kdump-tools to work as a systemd service
