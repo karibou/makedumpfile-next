@@ -298,7 +298,9 @@ function locate_kdump_kernel()
 function fadump_register()
 {
 	# set fadump registered sys node to `1` to register fadump
-	echo 1 > $sys_fadump_registered
+	if [ "`cat $sys_fadump_registered`" -ne 1 ]; then
+		echo 1 > $sys_fadump_registered
+	fi
 	rc=`cat $sys_fadump_registered`
 	if [ $rc -ne 1 ] ; then
 		log_failure_msg "fadump registering failed"
@@ -320,7 +322,9 @@ function fadump_register()
 function fadump_unregister()
 {
 	# set fadump registered sys node to `0` to un-register fadump
-	echo 0 > $sys_fadump_registered
+	if [ "`cat $sys_fadump_registered`" -ne 0 ]; then
+		echo 0 > $sys_fadump_registered
+	fi
 	rc=`cat $sys_fadump_registered`
 	if [ $rc -ne 0 ] ; then
 		log_failure_msg "fadump un-registering failed"
