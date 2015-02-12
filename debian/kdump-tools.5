@@ -1,5 +1,5 @@
 .\"
-.TH "kdump-tools.conf" "5" "April 2007" "kdump-tools v1.1.3" "Linux System Administrator's Manual"
+.TH "kdump-tools.conf" "5" "February 2015" "kdump-tools v1.1.4" "Linux System Administrator's Manual"
 .SH NAME
 kdump-tools.conf \- configuration file for the kdump-tools init script
 .SH SYNOPSIS
@@ -119,6 +119,34 @@ Additional arguments to append to the command line for the kdump kernel.
 If not set,  
 .RI \*(lq "irqpoll maxcpus=1 nousb" \*(rq
 will be used.
+.TP
+.B SSH
+username and hostname of the remote server that will receive the dump
+and dmesg files.
+.I username@hostname
+format must be used.
+.TP
+.B SSH_KEY
+Full path of the ssh private key to be used to login to the remote server.
+Use
+.RI \*(lq "kdump-config propagate" \*(rq
+to send the public key to the remote server.
+If not set, the default
+.I /root/.ssh/kdump_id_rsa
+will be used
+.TP
+.B HOSTTAG
+Select if hostname of IP address will be used as a prefix to the
+timestamped directory when sending files to the remote server.
+If not set,
+.RI \*(lq "ip" \*(rq
+will be used.
+.TP
+.B NFS
+Hostname and mount point of the NFS server configured to receive the crash dump.
+The syntax must be HOSTNAME:MOUNTPOINT (e.g.
+.I remote:/var/crash
+)
 .\"
 .\" # ---------------------------------------------------------------------------
 .\"
@@ -128,6 +156,11 @@ will be used.
 is as automated as can be at this point but there are some
 prerequisites to using it.  Additionally, some manual configuration
 is still required. 
+.PP
+By default, kernel dumps are stored locally on the system.
+.B kdump-tools
+can be configured to store the kernel dumps on a remote server accessible
+through the network.
 .SS Manual Configuration
 .IP 1. 
 .B USE_KDUMP 
@@ -192,6 +225,28 @@ begins to boot.
 .RE
 .\"
 .\"
+.SS Networked kernel dump Configuration
+.IP 1.
+Either use
+.B SSH
+or
+.B NFS
+to choose which protocol to use to remotely access the target server.
+.IP 2
+For
+.B SSH
+.I username@hostname
+needs to be provided along with an appropriate
+.B SSH_KEY
+definition or use
+.RI \*(lq "kdump-config propagate" \*(rq
+to propagate a new default ssh key.
+.PP
+.IP 3
+For
+.B NFS
+the remote server name must be provided along with the directory where
+files are to be copied.
 .SS Prerequisites
 .IP 1. 
 .B Boot Kernel Configuration
