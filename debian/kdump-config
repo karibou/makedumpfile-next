@@ -319,6 +319,40 @@ function check_relocatable()
 	fi
 }
 
+function check_securelevel()
+{
+	local sl_path="/sys/kernel/security/securelevel"
+	if [ ! -f "$sl_path" ]; then
+		return 1
+	fi
+
+	if [ "$(cat "$sl_path")" = "1" ]; then
+		return 0
+	fi
+
+	return 1
+}
+
+
+function check_secure_boot()
+{
+	local sb_path sm_file sb sm
+
+	sb_path=$(find /sys/firmware/efi/efivars -name SecureBoot-* 2>/dev/null)
+	sm_path=$(find /sys/firmware/efi/efivars -name SetupMode-* 2>/dev/null)
+
+	if [ -f "$sb_path" ] && [ -f "$sm_path" ]; then
+		sb=$(hexdump -v -e '/1 "%d\ "' $sb_path|cut -d' ' -f 5)
+		sm=$(hexdump -v -e '/1 "%d\ "' $sm_path|cut -d' ' -f 5)
+
+		if [ "$sb" = "1" ] && [ "$sm" = "0" ]; then
+			return 0
+		fi
+	fi
+
+	return 1
+}
+
 # Find the kexec/kdump kernel and possibly a corresponding initrd.
 # A kdump kernel does not need to match the `uname -r` of the booted kernel.
 #
@@ -467,6 +501,10 @@ function kdump_load()
 	# assemble the kexec command used to load the kdump kernel
 	KEXEC_CMD="$KEXEC -p"
 
+	if check_secure_boot || check_securelevel; then
+		KEXEC_CMD="$KEXEC_CMD -s"
+	fi
+
 	# Different kernel types allow/require different options:
 	# The only special case here is that x86, x86_64 elf style
 	# binaries require the --args-linux argument.
@@ -525,7 +563,12 @@ function kdump_load()
 # Returns: none. prints warnings or exit
 function kdump_unload()
 {
-	$KEXEC -p -u
+	if check_secure_boot || check_securelevel; then
+		$KEXEC -s -p -u
+	else
+		$KEXEC -p -u
+	fi
+
 	if [ $? == 0 ]; then
 		log_success_msg "unloaded kdump kernel"
 		logger -t $NAME "unloaded kdump kernel"
