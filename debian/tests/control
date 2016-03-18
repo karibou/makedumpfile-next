@@ -1,0 +1,3 @@
+Tests: install
+Depends: linux-crashdump
+Restrictions: needs-root, isolation-machine

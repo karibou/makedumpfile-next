@@ -1,0 +1,48 @@
+#!/usr/bin/python3
+# autopkgtest check: Verify rebooted testbed for readiness of kdump
+# (C) 2016 Canonical Ltd.
+# Author: Louis Bouchard <louis.bouchard@canonical.com>
+
+import sys
+import os
+import unittest
+import platform
+import tempfile
+import shutil
+import time
+import re
+from glob import glob
+
+class KdumpConfigTest(unittest.TestCase):
+    '''Verify kdump configuration after reboot'''
+
+    def test_check_symlink_present(self):
+        '''Verify that symlinks are present'''
+
+        self.assertTrue(os.path.exists('/var/lib/kdump/vmlinuz'),
+                                        'vmlinuz is missing or broken')
+        self.assertTrue(os.path.exists('/var/lib/kdump/initrd.img'),
+                                        'initrd.img is missing or broken')
+
+    def test_check_symlink_are_symlink(self):
+        '''Verify that symlinks are really symlinks'''
+
+        self.assertTrue(os.path.islink('/var/lib/kdump/vmlinuz'),
+                                        'vmlinuz is not a symlink')
+        self.assertTrue(os.path.islink('/var/lib/kdump/initrd.img'),
+                                        'initrd.img is not a symlink')
+
+    def test_symlink_to_current_kernel(self):
+        '''Verify that symlinks points to the files for the current kernel'''
+
+        kernel = platform.uname().release
+
+        namelist = os.readlink('/var/lib/kdump/vmlinuz')
+        self.assertEqual(namelist.lstrip('/boot/vmlinuz-'), kernel)
+
+        namelist = os.readlink('/var/lib/kdump/initrd.img')
+        self.assertEqual(namelist.lstrip('/var/lib/kdump/initrd.img-'), kernel)
+if __name__ == '__main__':
+
+    unittest.main(testRunner=unittest.TextTestRunner(stream=sys.stdout,
+                                                     verbosity=2))

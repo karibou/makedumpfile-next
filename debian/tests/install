@@ -1,0 +1,46 @@
+#!/usr/bin/python3
+# autopkgtest check: Boot with kdump-tools/makedumpfile installed and verify
+#                    if the context is adequate for tests
+# (C) 2016 Canonical Ltd.
+# Author: Louis Bouchard <louis.bouchard@canonical.com>
+
+import sys
+import os
+import unittest
+import subprocess
+import tempfile
+import shutil
+import time
+import re
+from glob import glob
+
+class KdumpReadyTest(unittest.TestCase):
+    '''Verify kdump configuration after reboot'''
+
+    def test_kdump_loaded(self):
+        '''Verify that kdump is loaded'''
+
+        out = subprocess.check_output(['kdump-config', 'show'],
+                                      universal_newlines=True)
+        self.assertIn('current state:    ready to kdump', out)
+
+def pre_boot_check():
+    '''Check that kdump-tools is installed and configured prior to reboot'''
+
+    with open('/etc/default/kdump-tools', 'r') as config:
+        conf = config.readlines()
+
+    assert ('USE_KDUMP=1\n' in conf), "USE_KDUMP is not enabled"
+
+    out = subprocess.check_output(['kdump-config', 'show'],
+                                  universal_newlines=True)
+    assert ('current state:    Not ready to kdump' in out), "kdump ready ???"
+
+if __name__ == '__main__':
+    if not os.getenv('ADT_REBOOT_MARK'):
+        pre_boot_check()
+        print('Rebooting...')
+        subprocess.check_call(['/tmp/autopkgtest-reboot', 'enable-crashkernel'])
+
+    unittest.main(testRunner=unittest.TextTestRunner(stream=sys.stdout,
+                                                     verbosity=2))
