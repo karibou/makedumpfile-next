@@ -1,0 +1,263 @@
+#!/usr/bin/python3
+import os
+import sys
+import subprocess
+import time
+import platform
+import apt
+import apt.progress
+import shutil
+
+_EBAD = -1
+_OK = 0
+_crash_dir = '/var/crash'
+_remote_server = 'kdump-netcrash'
+_remote_user = 'ubuntu'
+_nfs_remote_mp = '{}:/var/crash'.format(_remote_server)
+_conffile = "/etc/default/kdump-tools"
+_phases = ['local', 'ssh', 'nfs', 'completed']
+
+_artifact_dir = os.environ.get("ADT_ARTIFACTS")
+
+assert ( _artifact_dir is not None), "ADT_ARTIFACTS undefined"
+
+class Phase(object):
+    """The phase of the test to execute"""
+    def __init__(self):
+        self.phase = 0
+
+    def set_phase(self, current_phase):
+        self.phase = _phases.index(current_phase)+1
+
+    def set_conffile(self):
+        with open("{}.ref".format(_conffile), "r") as orig:
+            try:
+                if _phases[self.phase] == 'local':
+                    with open("{}".format(_conffile), "w") as new_conf:
+                        for line in orig.readlines():
+                            if line.find('USE_KDUMP') == 0:
+                                new_conf.write("{}".format('USE_KDUMP=1\n'))
+                            elif line.find('#KDUMP_CMDLINE_APPEND') == 0:
+                                # This is required to avoid a panic in qemu
+                                # during kernel crash dump
+                                args=line.lstrip('#KDUMP_CMDLINE_APPEND="')
+                                args='"noapic '+args
+                                new_conf.write("KDUMP_CMDLINE_APPEND=%s" %
+                                               args)
+                            else:
+                                new_conf.write("{}".format(line))
+                elif _phases[self.phase] == 'ssh':
+                    ref = orig.read()
+                    orig.seek(0)
+                    if ref.find("SSH") != -1:
+                        with open("{}".format(_conffile), "w") as new_conf:
+                            for line in orig.readlines():
+                                if line.find('USE_KDUMP') == 0:
+                                    new_conf.write(
+                                        "{}".format('USE_KDUMP=1\n'))
+                                else:
+                                    new_conf.write("{}".format(line))
+                            new_conf.write(
+                                'SSH="{}"\n'.format(_ssh_remote_server))
+                    else:
+                        print("SSH functionality not found in {}".format(
+                            '{}'.format(_conffile)))
+                        return _EBAD
+                elif _phases[self.phase] == 'nfs':
+                    ref = orig.read()
+                    orig.seek(0)
+                    if ref.find("NFS") != -1:
+                        with open("{}".format(_conffile), "w") as new_conf:
+                            for line in orig.readlines():
+                                if line.find('USE_KDUMP') == 0:
+                                    new_conf.write(
+                                        "{}".format('USE_KDUMP=1\n'))
+                                else:
+                                    new_conf.write("{}".format(line))
+                            new_conf.write('NFS="{}"\n'.format(_nfs_remote_mp))
+                            #
+                            # Adding HOSTTAG to test the functionality
+                            # And avoid name collision b/w SSH and NFS
+                            #
+                            new_conf.write('HOSTTAG="hostname"\n')
+                    else:
+                        print("NFS functionality not found in {}".format(
+                            '{}'.format(_conffile)))
+                        return _EBAD
+                elif _phases[self.phase] == 'completed':
+                    return _OK
+                else:
+                    raise TypeError("Invalid test")
+                    return _EBAD
+            except PermissionError as err:
+                print(("User does not have the privilege "
+                       "to change this file\t{}").format(err))
+                return _EBAD
+        return _OK
+
+
+    def trigger_crash(self):
+        prep = subprocess.check_output(["/tmp/autopkgtest-reboot-prepare",
+                                        "%s" % _phases[self.phase]])
+        if crash_switch:
+            try:
+                os.sync()
+                f = open("/proc/sysrq-trigger", "a")
+                f.write('c')
+            except PermissionError as err:
+                print("Must be root to trigger a crash dump\t{}".format(err))
+        else:
+            print("Would trigger a panic but crash_switch is False")
+
+
+def create_ref_conf():
+    try:
+        with open("{}.ref".format(_conffile), "r") as f:
+            pass
+    except FileNotFoundError:
+        try:
+            os.rename(
+                "{}".format(_conffile),
+                "{}.ref".format(_conffile))
+        except PermissionError as err:
+            print(("User does not have the privilege "
+                   "to change this file\t{}").format(err))
+            return _EBAD
+        except FileNotFoundError:
+            print("Unable to find {}".format(_conffile))
+            return _EBAD
+    return
+
+
+
+def gather_test_results():
+    if os.path.exists(_artifact_dir):
+        shutil.copy('/var/log/syslog', _artifact_dir)
+
+    if not _local_only:
+        try:
+            subprocess.check_output(
+                ["mount", "kdump-netcrash:/var/crash", "/mnt"])
+        except subprocess.CalledProcessError:
+            print("Unable to mount remote server to collect results")
+            return _EBAD
+    now = time.localtime(time.time())
+    for path, dirs, files in os.walk(_crash_dir):
+        if path.find('/var/crash/%s' % str(now.tm_year)) == 0:
+            for file in files:
+                shutil.copy('{}/{}'.format(path, file), _artifact_dir)
+    for path, dirs, files in os.walk(_crash_dir):
+        if dirs and dirs[0].find(str(now.tm_year)) == 0:
+            os.rename(
+                "{}/{}".format(path, dirs[0]),
+                "{}/local_{}".format(path, dirs[0]))
+    if not _local_only:
+        host = platform.node()
+        for path, dirs, files in os.walk('/mnt'):
+            for dir in dirs:
+                try:
+                    if dir.startswith(host):
+                        cp = subprocess.check_output([
+                            "cp", "-pr", "{}/{}".format(path, dir),
+                            "{}/nfs_{}".format(_crash_dir, dir)])
+                        shutil.copy('{}/nfs_{}'.format(_crash_dir, dir), _artifact_dir)
+                    else:
+                        cp = subprocess.check_output([
+                            "cp", "-pr", "{}/{}".format(path, dir),
+                            "{}/ssh_{}".format(_crash_dir, dir)])
+                        shutil.copy('{}/ssh_{}'.format(_crash_dir, dir), _artifact_dir)
+                except subprocess.CalledProcessError:
+                    print("Unable to copy files from remote server")
+                    return _EBAD
+
+    if not _local_only:
+        try:
+            mount = subprocess.check_output(["umount", "/mnt"])
+        except subprocess.CalledProcessError:
+            print("Unable to unmount /mnt")
+            return _EBAD
+
+
+def analyse_results():
+    if _no_result:
+        print("Result Analysis overriden by NO_RESULT")
+        return
+    else:
+        print("Running result analysis")
+        found_dump=False
+        found_dmesg=False
+        for path, dirs, files in os.walk(_artifact_dir):
+            if path == _artifact_dir:
+                for file in files:
+                    if file.find('dump') == 0:
+                        found_dump=True
+                    elif file.find('dmesg') == 0:
+                        found_dmesg=True
+        try:
+            assert ( found_dump and found_dmesg), ' file missing'
+        except AssertionError as Err:
+            if not found_dump:
+                print("dump.{timestamp} %s" % Err)
+            if not found_dmesg:
+                print("dmesg.{timestamp} %s" % Err)
+            raise
+
+        out = subprocess.check_output(['makedumpfile', '--mem-usage',
+                                       '/proc/kcore'], universal_newlines=True)
+        self.assertNotIn('The kernel version is not supported.', out)                                                                
+
+
+
+if __name__ == '__main__':
+
+    # _local_only = True
+    # to indicate that netdump tests should not be run (SSH & NFS)
+    #
+    # _no_result = 1 will override the analysis of the results
+    # which can be time consuming
+    # _remote_user = root is required for Debian SSH tests
+    _local_only = True
+    _no_result = False
+    _remote_user = 'root'
+    _ssh_remote_server = '{}@{}'.format(_remote_user, _remote_server)
+
+    # For debug only; avoid triggering a real crash
+    # crash_switch = False
+    crash_switch = True
+
+    if create_ref_conf() == _EBAD:
+        exit(_EBAD)
+
+    action = Phase()
+
+    adt_reboot_mark = os.environ.get('ADT_REBOOT_MARK')
+    if adt_reboot_mark is not None:
+        if adt_reboot_mark == 'local' and _local_only:
+            action.phase = _phases.index('completed')
+        else:
+            action.set_phase(adt_reboot_mark)
+
+    if action.set_conffile() == _OK:
+        if action.phase is not _phases.index('completed'):
+            # sys.exit(0)
+            print("Running phase {}".format(_phases[action.phase]))
+            action.trigger_crash()
+        # elif not _local_only or _phases[action.phase] != 'completed':
+        else:
+            print("Test completed.")
+    else:
+        print("Unable to continue with tests")
+        action.phase = _phases.index('completed')
+        sys.exit(_EBAD)
+
+    ret = gather_test_results()
+    if not ret:
+        ret = analyse_results()
+        if not ret:
+            print("All test succeeded")
+        else:
+            print("Failure during analysis of the results")
+    sys.exit(ret)
+
+
+# vim: et ts=4 sw=4

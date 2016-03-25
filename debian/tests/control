@@ -1,3 +1,7 @@
 Tests: install
 Depends: linux-crashdump
 Restrictions: needs-root, isolation-machine
+
+Tests: test-crashdump
+Depends: linux-crashdump
+Restrictions: needs-root, isolation-machine, allow-stderr
