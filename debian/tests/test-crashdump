@@ -1,11 +1,9 @@
 #!/usr/bin/python3
-import os
 import sys
+import os
 import subprocess
 import time
 import platform
-import apt
-import apt.progress
 import shutil
 
 _EBAD = -1

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
-# autopkgtest check: Boot with kdump-tools/makedumpfile installed and verify
-#                    if the context is adequate for tests
+# autopkgtest check: - Boot with kdump-tools/makedumpfile installed and verify
+#                      if the context is adequate for tests
+#                    - Reboot to enable crashkernel= kernel parameter
 # (C) 2016 Canonical Ltd.
 # Author: Louis Bouchard <louis.bouchard@canonical.com>
 
@@ -8,11 +9,6 @@ import sys
 import os
 import unittest
 import subprocess
-import tempfile
-import shutil
-import time
-import re
-from glob import glob
 
 class KdumpReadyTest(unittest.TestCase):
     '''Verify kdump configuration after reboot'''
