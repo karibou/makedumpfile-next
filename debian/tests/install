@@ -10,6 +10,7 @@ import os
 import unittest
 import subprocess
 
+
 class KdumpReadyTest(unittest.TestCase):
     '''Verify kdump configuration after reboot'''
 
@@ -19,6 +20,7 @@ class KdumpReadyTest(unittest.TestCase):
         out = subprocess.check_output(['kdump-config', 'show'],
                                       universal_newlines=True)
         self.assertIn('current state:    ready to kdump', out)
+
 
 def pre_boot_check():
     '''Check that kdump-tools is installed and configured prior to reboot'''

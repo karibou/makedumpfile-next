@@ -17,7 +17,8 @@ _phases = ['local', 'ssh', 'nfs', 'completed']
 
 _artifact_dir = os.environ.get("ADT_ARTIFACTS")
 
-assert ( _artifact_dir is not None), "ADT_ARTIFACTS undefined"
+assert (_artifact_dir is not None), "ADT_ARTIFACTS undefined"
+
 
 class Phase(object):
     """The phase of the test to execute"""
@@ -25,7 +26,7 @@ class Phase(object):
         self.phase = 0
 
     def set_phase(self, current_phase):
-        self.phase = _phases.index(current_phase)+1
+        self.phase = _phases.index(current_phase) + 1
 
     def set_conffile(self):
         with open("{}.ref".format(_conffile), "r") as orig:
@@ -86,7 +87,6 @@ class Phase(object):
                 return _EBAD
         return _OK
 
-
     def trigger_crash(self):
         prep = subprocess.check_output(["/tmp/autopkgtest-reboot-prepare",
                                         "%s" % _phases[self.phase]])
@@ -120,7 +120,6 @@ def create_ref_conf():
     return
 
 
-
 def gather_test_results():
     if os.path.exists(_artifact_dir):
         shutil.copy('/var/log/syslog', _artifact_dir)
@@ -151,12 +150,14 @@ def gather_test_results():
                         cp = subprocess.check_output([
                             "cp", "-pr", "{}/{}".format(path, dir),
                             "{}/nfs_{}".format(_crash_dir, dir)])
-                        shutil.copy('{}/nfs_{}'.format(_crash_dir, dir), _artifact_dir)
+                        shutil.copy('{}/nfs_{}'.format(_crash_dir, dir),
+                                    _artifact_dir)
                     else:
                         cp = subprocess.check_output([
                             "cp", "-pr", "{}/{}".format(path, dir),
                             "{}/ssh_{}".format(_crash_dir, dir)])
-                        shutil.copy('{}/ssh_{}'.format(_crash_dir, dir), _artifact_dir)
+                        shutil.copy('{}/ssh_{}'.format(_crash_dir, dir),
+                                    _artifact_dir)
                 except subprocess.CalledProcessError:
                     print("Unable to copy files from remote server")
                     return _EBAD
@@ -171,17 +172,17 @@ def gather_test_results():
 
 def analyse_results():
     print("Running result analysis")
-    found_dump=False
-    found_dmesg=False
+    found_dump = False
+    found_dmesg = False
     for path, dirs, files in os.walk(_artifact_dir):
         if path == _artifact_dir:
             for file in files:
                 if file.find('dump') == 0:
-                    found_dump=True
+                    found_dump = True
                 elif file.find('dmesg') == 0:
-                    found_dmesg=True
+                    found_dmesg = True
     try:
-        assert ( found_dump and found_dmesg), ' file missing'
+        assert (found_dump and found_dmesg), ' file missing'
     except AssertionError as Err:
         if not found_dump:
             print("dump.{timestamp} %s" % Err)
@@ -192,8 +193,6 @@ def analyse_results():
     out = subprocess.check_output(['makedumpfile', '--mem-usage',
                                    '/proc/kcore'], universal_newlines=True)
     self.assertNotIn('The kernel version is not supported.', out)
-
-
 
 if __name__ == '__main__':
 
