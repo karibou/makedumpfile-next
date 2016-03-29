@@ -223,10 +223,8 @@ if __name__ == '__main__':
 
     if action.set_conffile() == _OK:
         if action.phase is not _phases.index('completed'):
-            # sys.exit(0)
             print("Running phase {}".format(_phases[action.phase]))
             action.trigger_crash()
-        # elif not _local_only or _phases[action.phase] != 'completed':
         else:
             print("Test completed.")
     else:
