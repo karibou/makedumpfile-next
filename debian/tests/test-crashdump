@@ -35,13 +35,6 @@ class Phase(object):
                         for line in orig.readlines():
                             if line.find('USE_KDUMP') == 0:
                                 new_conf.write("{}".format('USE_KDUMP=1\n'))
-                            elif line.find('#KDUMP_CMDLINE_APPEND') == 0:
-                                # This is required to avoid a panic in qemu
-                                # during kernel crash dump
-                                args=line.lstrip('#KDUMP_CMDLINE_APPEND="')
-                                args='"noapic '+args
-                                new_conf.write("KDUMP_CMDLINE_APPEND=%s" %
-                                               args)
                             else:
                                 new_conf.write("{}".format(line))
                 elif _phases[self.phase] == 'ssh':
