@@ -170,32 +170,28 @@ def gather_test_results():
 
 
 def analyse_results():
-    if _no_result:
-        print("Result Analysis overriden by NO_RESULT")
-        return
-    else:
-        print("Running result analysis")
-        found_dump=False
-        found_dmesg=False
-        for path, dirs, files in os.walk(_artifact_dir):
-            if path == _artifact_dir:
-                for file in files:
-                    if file.find('dump') == 0:
-                        found_dump=True
-                    elif file.find('dmesg') == 0:
-                        found_dmesg=True
-        try:
-            assert ( found_dump and found_dmesg), ' file missing'
-        except AssertionError as Err:
-            if not found_dump:
-                print("dump.{timestamp} %s" % Err)
-            if not found_dmesg:
-                print("dmesg.{timestamp} %s" % Err)
-            raise
+    print("Running result analysis")
+    found_dump=False
+    found_dmesg=False
+    for path, dirs, files in os.walk(_artifact_dir):
+        if path == _artifact_dir:
+            for file in files:
+                if file.find('dump') == 0:
+                    found_dump=True
+                elif file.find('dmesg') == 0:
+                    found_dmesg=True
+    try:
+        assert ( found_dump and found_dmesg), ' file missing'
+    except AssertionError as Err:
+        if not found_dump:
+            print("dump.{timestamp} %s" % Err)
+        if not found_dmesg:
+            print("dmesg.{timestamp} %s" % Err)
+        raise
 
-        out = subprocess.check_output(['makedumpfile', '--mem-usage',
-                                       '/proc/kcore'], universal_newlines=True)
-        self.assertNotIn('The kernel version is not supported.', out)                                                                
+    out = subprocess.check_output(['makedumpfile', '--mem-usage',
+                                   '/proc/kcore'], universal_newlines=True)
+    self.assertNotIn('The kernel version is not supported.', out)
 
 
 
@@ -204,11 +200,8 @@ if __name__ == '__main__':
     # _local_only = True
     # to indicate that netdump tests should not be run (SSH & NFS)
     #
-    # _no_result = 1 will override the analysis of the results
-    # which can be time consuming
     # _remote_user = root is required for Debian SSH tests
     _local_only = True
-    _no_result = False
     _remote_user = 'root'
     _ssh_remote_server = '{}@{}'.format(_remote_user, _remote_server)
 
