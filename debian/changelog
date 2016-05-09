@@ -1,3 +1,17 @@
+makedumpfile (1:1.5.9-6) sid; urgency=medium
+
+  * [ Juerg Haefliger <juerg.haefliger@hp.com> ]
+
+    Limit the number of dumps kept on the local machine
+    
+    Introduce a new config variable KDUMP_NUM_DUMPS that specifies how
+    many dumps should be kept on the machine. This can be use to prevent
+    running out of disk space. It is ignored if remote dumping (ssh or nfs)
+    is enabled. If there are too many dump files, older dumps are purged but
+    only after the current dump operation succeeded.
+
+ -- Louis Bouchard <louis.bouchard@ubuntu.com>  Mon, 09 May 2016 15:07:18 +0200
+
 makedumpfile (1:1.5.9-5) sid; urgency=medium
 
   [ Hendrik Brueckner ]
