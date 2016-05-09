@@ -1,3 +1,25 @@
+makedumpfile (1:1.5.9-6) sid; urgency=medium
+
+  * [ Juerg Haefliger <juerg.haefliger@hp.com> ]
+
+    Limit the number of dumps kept on the local machine
+
+    Introduce a new config variable KDUMP_NUM_DUMPS that specifies how
+    many dumps should be kept on the machine. This can be use to prevent
+    running out of disk space. It is ignored if remote dumping (ssh or nfs)
+    is enabled. If there are too many dump files, older dumps are purged but
+    only after the current dump operation succeeded.
+
+  * [ Linn Crosetto <linn@hp.com> ]
+
+    kdump-config: add support for UEFI Secure Boot
+
+    kdump-config needs to query the state of UEFI Secure Boot in order to correctly
+    use kexec to boot the crash kernel. Specifically, kexec needs the "-s" option
+    to use the kexec_file_load system call to validate the image before loading it.
+
+ -- Louis Bouchard <louis.bouchard@ubuntu.com>  Mon, 09 May 2016 15:07:18 +0200
+
 makedumpfile (1:1.5.9-5) sid; urgency=medium
 
   [ Hendrik Brueckner ]
