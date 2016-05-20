@@ -190,15 +190,26 @@ def analyse_results():
             print("dmesg.{timestamp} %s" % Err)
         raise
 
-    out = subprocess.check_output(['makedumpfile', '--mem-usage',
-                                   '/proc/kcore'], universal_newlines=True)
     try:
-        assert ('The kernel version is not supported.' not in out)
-    except AssertionError:
-        print("### WARNING : Found The kernel version is not supported. ###")
-        # Do not fail the test
-        # just report it
-        # raise AssertionError
+        out = subprocess.check_output(['makedumpfile', '--mem-usage',
+                                       '/proc/kcore'], universal_newlines=True)
+        try:
+            assert ('The kernel version is not supported.' not in out)
+        except AssertionError:
+            print('''
+############################################################
+############################################################
+############################################################
+###                                                      ###
+### WARNING : Found The kernel version is not supported. ###
+###                                                      ###
+############################################################
+############################################################''')
+            # Do not fail the test
+            # just report it
+            # raise AssertionError
+    except subprocess.CalledProcessError as ProcErr:
+        print("Error : makedumpfile -mem-usage /proc/kcore : %s" % ProcErr)
 
 
 if __name__ == '__main__':
