@@ -9,17 +9,6 @@ import os
 import subprocess
 
 
-class KdumpReadyTest(unittest.TestCase):
-    '''Verify kdump configuration after reboot'''
-
-    def test_kdump_loaded(self):
-        '''Verify that kdump is loaded'''
-
-        out = subprocess.check_output(['kdump-config', 'show'],
-                                      universal_newlines=True)
-        self.assertIn('current state:    ready to kdump', out)
-
-
 def pre_boot_check():
     '''Check that kdump-tools is installed and configured prior to reboot'''
 
@@ -37,6 +26,3 @@ if __name__ == '__main__':
         pre_boot_check()
         print('Rebooting...')
         subprocess.check_call(['/tmp/autopkgtest-reboot', 'enable-crashkernel'])
-
-    unittest.main(testRunner=unittest.TextTestRunner(stream=sys.stdout,
-                                                     verbosity=2))

@@ -7,9 +7,40 @@ import sys
 import os
 import unittest
 import platform
+import subprocess
 
 class KdumpConfigTest(unittest.TestCase):
     '''Verify kdump configuration after reboot'''
+    arch = platform.machine()
+    def_file = '/boot/grub/grub.cfg'
+    s390x_file = '/etc/zipl.conf'
+    def_preset = '128M'
+    ppc_preset = '2G-4G:320M,4G-32G:512M,32G-64G:1024M,64G-128G:2048M,128G-:4096M@32M'
+    preset = def_preset
+    bootfile = def_file
+
+    def test_kdump_loaded(self):
+        '''Verify that kdump is loaded'''
+
+        out = subprocess.check_output(['kdump-config', 'show'],
+                                      universal_newlines=True)
+        self.assertIn('current state:    ready to kdump', out)
+
+    def test_crashkernel_configured(self):
+        '''Verify that crashkernel= is configured in the proper files'''
+
+        if self.arch == 's390x':
+            self.bootfile = s390x_file
+        elif self.arch == 'ppc64el':
+            self.preset = ppc_preset
+
+        with open('%s' % self.bootfile, 'rb') as bootconf:
+            bootlines = bootconf.readlines()
+            self.assertIn('crashkernel=%s' % self.preset, str(bootlines))
+        with open('/proc/cmdline', 'rb') as cmdline:
+            bootcmd = cmdline.readlines()
+            self.assertIn('crashkernel=%s' % self.preset, str(bootcmd))
+
 
     def test_check_symlink_present(self):
         '''Verify that symlinks are present'''
