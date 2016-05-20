@@ -5,9 +5,7 @@
 # (C) 2016 Canonical Ltd.
 # Author: Louis Bouchard <louis.bouchard@canonical.com>
 
-import sys
 import os
-import unittest
 import subprocess
 
 
