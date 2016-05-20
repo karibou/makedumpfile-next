@@ -1,3 +1,3 @@
-Tests: install test-crashdump
+Tests: install check-config test-crashdump
 Depends: linux-crashdump
 Restrictions: needs-root, isolation-machine, allow-stderr
