@@ -19,7 +19,24 @@ makedumpfile (1:1.5.9-6) sid; urgency=medium
     to use the kexec_file_load system call to validate the image before loading it.
     (Closes: #823003)
 
- -- Louis Bouchard <louis.bouchard@ubuntu.com>  Mon, 09 May 2016 15:07:18 +0200
+  * Add support for architecture-specific crashkernel param
+
+    On Debian, the crashkernel boot parameter is left undefined. On Ubuntu
+    it was defined in the kexec-tools package, modified specifically.
+
+    This parameter is now defined by the kdump-tools package and uses an
+    architecture-specific definition. The default values are :
+
+     - All but ppc64el : 128M
+     - ppc64el : 2G-4G:320M,4G-32G:512M,32G-64G:1024M,64G-128G:2048M,128G-:4096M@32M
+
+    On s390x architecture, the crashkernel parameter is added to the
+    /etc/zipl.conf file.
+
+    /etc/default/kdump-tools is also modified to use the cio_ignore parameter
+    when kexec loads the crash kernel (LP: #1570775)
+
+ -- Louis Bouchard <louis.bouchard@ubuntu.com>  Tue, 17 May 2016 15:28:43 +0200
 
 makedumpfile (1:1.5.9-5) sid; urgency=medium
 

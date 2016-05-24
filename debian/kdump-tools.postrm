@@ -10,7 +10,15 @@ set -e
 #DEBHELPER#
 
 case "$1" in
+       remove)
+	       if test -e /etc/zipl.conf;then
+	             sed -i "s/ crashkernel=.*M//" /etc/zipl.conf
+		     zipl
+	       fi
+	       rm -rf /etc/default/grub.d/kdump-tools.cfg
+	       ;;
        purge)
 		rm -rf /var/lib/kdump
+	       ;;
 esac
 

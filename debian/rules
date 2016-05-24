@@ -1,5 +1,7 @@
 #!/usr/bin/make -f
 
+DEB_HOST_ARCH := $(shell dpkg-architecture -qDEB_HOST_ARCH)
+
 %:
 	dh $@ --with=systemd
 
@@ -16,3 +18,7 @@ override_dh_install:
 	dh_install
 	install -D -m 755 debian/kernel-postinst-generate-initrd debian/kdump-tools/etc/kernel/postinst.d/kdump-tools
 	install -D -m 755 debian/kernel-postrm-delete-initrd debian/kdump-tools/etc/kernel/postrm.d/kdump-tools
+ifneq (,$(filter $(DEB_HOST_ARCH),i386 amd64 powerpc ppc64 ppc64el ia64))
+	install -D -m644 debian/kdump-tools.grub \
+		debian/kdump-tools/etc/default/grub.d/kdump-tools.cfg
+endif
