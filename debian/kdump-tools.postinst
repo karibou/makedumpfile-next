@@ -45,6 +45,9 @@ case "$1" in
 			if test -z "$HAS_CRASHKERNEL"; then
 				sed -i "/parameters/{s|\"$| crashkernel=${DEF_PRESET}\"|}" /etc/zipl.conf
 				zipl
+			fi
+			HAS_CIO="$(grep cio_ignore /etc/default/kdump-tools)" || true
+			if test -z "$HAS_CIO"; then
 				CIO_IGNORE="$(cio_ignore -u -k)"
 				sed -i "s/\#KDUMP_CMDLINE_APPEND/KDUMP_CMDLINE_APPEND/" /etc/default/kdump-tools
 				sed -i "/KDUMP_CMDLINE_APPEND/{s|\"$| ${CIO_IGNORE}\"|}" /etc/default/kdump-tools
