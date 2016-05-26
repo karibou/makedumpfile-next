@@ -21,7 +21,8 @@ Description: VMcore extraction tool
 
 Package: kdump-tools
 Architecture: all
-Depends: ${shlibs:Depends}, ${misc:Depends}, makedumpfile, kexec-tools, debconf
+Depends: ${shlibs:Depends}, ${misc:Depends}, makedumpfile, kexec-tools (>= 1:2.0.10-3),
+         debconf
 Description: scripts and tools for automating kdump (Linux crash dumps)
  kdump-tools provides an init script and a configuration script for
  automating the use of kdump.  It uses the makedumpfile utility to
