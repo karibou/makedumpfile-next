@@ -16,6 +16,9 @@ case "$1" in
 		     zipl
 	       fi
 	       rm -rf /etc/default/grub.d/kdump-tools.cfg
+	       if [ -x /usr/sbin/update-grub ] && [ -e /boot/grub/grub.cfg ]; then
+		       update-grub
+	       fi
 	       ;;
        purge)
 		rm -rf /var/lib/kdump
