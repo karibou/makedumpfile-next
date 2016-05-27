@@ -59,7 +59,7 @@ case "$1" in
 			SUFFIX="default"
 		;;
 	esac
-	if ! test -L /etc/default/grub.d/kdump-tools.cfg; then
+	if ! test -L /etc/default/grub.d/kdump-tools.cfg && test -x /usr/sbin/update-grub; then
 		ln -s /etc/default/grub.d/kdump-tools.$SUFFIX /etc/default/grub.d/kdump-tools.cfg
 	fi
     ;;
